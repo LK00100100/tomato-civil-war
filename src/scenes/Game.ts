@@ -1,8 +1,9 @@
 import { Scene } from "phaser";
 import { Tomato } from "../unit/Tomato";
-import { Gun } from "../item/Gun";
 import { Bullet } from "../entity/Bullet";
-import { BulletPouch } from "../item/BulletPouch";
+import { Company } from "../unit_group/Company";
+import { UnitFactory } from "../unit/UnitFactory";
+import { Army } from "../unit_group/Army";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -11,16 +12,20 @@ export class Game extends Scene {
 
   private tomato: Phaser.GameObjects.Container;
 
-  private readonly MOVE_SPEED = 25;
-  private readonly BULLET_SPEED = 2000;
+  public readonly MOVE_SPEED = 25;
+  public readonly BULLET_SPEED = 2000;
 
-  private friendlyBullets: Phaser.Physics.Arcade.Group;
-  private enemyBullets: Phaser.Physics.Arcade.Group;
+  public friendlyBullets: Phaser.Physics.Arcade.Group;
+  public enemyBullets: Phaser.Physics.Arcade.Group;
+
+  //TODO: static enums
+  public static readonly teamA = 1;
+  public static readonly teamB = 2;
 
   //TODO: bullet pool
 
-  private friendlySprites: Phaser.Physics.Arcade.Group;
-  private enemySprites: Phaser.Physics.Arcade.Group;
+  private friendlyArmy: Army;
+  private enemyArmy: Army;
 
   /**
    * controls
@@ -37,6 +42,9 @@ export class Game extends Scene {
   }
 
   create() {
+    /**
+     * camera junk
+     */
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor(0x00ff00);
     this.camera.centerOn(0, 0);
@@ -45,6 +53,9 @@ export class Game extends Scene {
     this.background = this.add.image(0, 0, "background");
     this.background.setScale(50);
     this.background.setAlpha(0.5);
+
+    this.friendlyBullets = this.physics.add.group();
+    this.enemyBullets = this.physics.add.group();
 
     this.msg_text = this.add.text(
       400,
@@ -59,25 +70,24 @@ export class Game extends Scene {
         align: "center",
       }
     );
-
     this.msg_text.setOrigin(0.5);
 
-    this.tomato = this.createTomato();
-    const playerSprite = this.tomato.getByName(
-      "body"
-    ) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    this.initKeyboard();
 
-    this.friendlyBullets = this.physics.add.group();
-    this.enemyBullets = this.physics.add.group();
+    this.friendlyArmy = new Army(this, Game.teamA);
+    this.enemyArmy = new Army(this, Game.teamB);
 
-    this.friendlySprites = this.physics.add.group();
-    this.friendlySprites.add(playerSprite);
+    this.tomato = UnitFactory.createTomato(this);
 
-    this.enemySprites = this.physics.add.group();
+    const yourCompany = new Company(this);
+    yourCompany.addUnit(this.tomato.getData("data"));
 
-    /**
-     * keyboard
-     */
+    this.friendlyArmy.addOrganization(yourCompany);
+
+    this.makeEnemies(30);
+  }
+
+  private initKeyboard() {
     this.keyW = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
@@ -85,57 +95,25 @@ export class Game extends Scene {
 
     this.keyZ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     this.keyX = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
-
-    this.makeEnemies();
-
-    this.physics.add.collider(this.friendlySprites, this.enemySprites);
   }
 
-  private makeEnemies() {
-    for (let i = 0; i < 10; i++) {
-      const tomato = this.createTomato();
+  private makeEnemies(numEnemies: number) {
+    const company = new Company(this);
 
-      tomato.setY(-700);
-      tomato.setX(0 + i * 500);
-
-      let tomatoSprite = tomato.getByName(
-        "body"
-      ) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-
-      tomatoSprite.setTint(0x87ceeb);
-
-      this.enemySprites.add(tomatoSprite);
+    for (let i = 0; i < numEnemies; i++) {
+      const tomato = UnitFactory.createTomato(this);
+      company.addUnit(tomato.getData("data"));
     }
-  }
 
-  private createTomato(): Phaser.GameObjects.Container {
-    const tomato = this.add.container(0, 0);
+    this.enemyArmy.addOrganization(company);
+    this.enemyArmy.formUp(-700, -700);
 
-    const tomatoData = new Tomato();
-    const gunData = new Gun();
-    const bulletPouchData = new BulletPouch();
-    tomatoData.addItem(gunData);
-    tomatoData.addItem(bulletPouchData);
-
-    tomato.setData("data", tomatoData);
-
-    const tomatoSprite = this.physics.add.sprite(0, 0, "unit-tomato");
-    tomatoSprite.setData("data", tomatoData);
-
-    const gunSprite = this.add.sprite(20, 100, "item-gun");
-    gunSprite.setData("data", gunData);
-
-    //TODO: if not selected, hide gun?
-
-    tomatoSprite.setName("body");
-    gunSprite.setName("weapon");
-
-    tomato.add(tomatoSprite);
-    tomato.add(gunSprite);
-
-    tomatoSprite.setMass(1);
-
-    return tomato;
+    //add enemy tint
+    const sprites = this.enemyArmy.getUnitHitSprites();
+    sprites.getChildren().forEach((go) => {
+      const sprite = go as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+      sprite.setTint(0x87ceeb); // sky blue, makes dark red.
+    });
   }
 
   /**
@@ -144,20 +122,31 @@ export class Game extends Scene {
    * @param delta in milliseconds since last update
    */
   update(_: any, delta: any) {
-    this.tomato.getData("data").update(delta);
+    this.enemyArmy.update(delta);
+    this.friendlyArmy.update(delta);
 
     this.processInput(delta);
 
     this.updateBullets(delta);
 
     this.checkCollisions();
+
+    if (this.isGameOver()) {
+      console.log("game is over");
+    }
   }
 
-  processInput(delta: number) {
+  processInput(_delta: number) {
     /**
      * movement
      */
     if (this.keyW.isDown) {
+      //TODO: think later. cannot set velocity on 1 out of 2 sprites. not ez with container
+      // let body = this.tomato.getByName(
+      //   "body"
+      // ) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+
+      // body.setVelocityY(-this.MOVE_SPEED);
       this.tomato.setY(this.tomato.y - this.MOVE_SPEED);
     }
 
@@ -186,7 +175,7 @@ export class Game extends Scene {
 
       //player shoots
       const tomatoData: Tomato = this.tomato.getData("data");
-      const event = tomatoData.handleLeftClick(delta);
+      const event = tomatoData.doAction();
       if (event == "item-gun-fire") {
         this.shootPlayerBullet();
       }
@@ -220,14 +209,14 @@ export class Game extends Scene {
 
     bulletSprite.setData("data", new Bullet());
 
-    console.log("add bullet");
+    //note: when adding to group, velocity will be set to 0.
+    this.friendlyBullets.add(bulletSprite);
+
     this.physics.velocityFromRotation(
       this.tomato.rotation,
       this.BULLET_SPEED,
       bulletSprite.body.velocity
     );
-
-    //this.friendlyBullets.add(bulletSprite);
   }
 
   private updateBullets(delta: number) {
@@ -255,25 +244,55 @@ export class Game extends Scene {
   }
 
   private checkCollisions() {
-    //friends and enemies collide
-    // this.physics.world.overlap(
-    //   this.friendlySprites,
-    //   this.enemySprites,
-    //   this.collideManInGuard.bind(this),
-    //   null,
-    //   this,
-    // );
-
     //friends collide with enemy bullets
+    this.physics.world.overlap(
+      this.friendlyArmy.getUnitHitSprites(),
+      this.enemyBullets,
+      this.collideFriendlyWithEnemyBullets.bind(this),
+      undefined,
+      this
+    );
 
     //enemies collide with friendly bullets
     this.physics.world.overlap(
-      this.enemySprites,
+      this.enemyArmy.getUnitHitSprites(),
       this.friendlyBullets,
       this.collideEnemyWithFriendlyBullets.bind(this),
       undefined,
       this
     );
+
+    //note: only works if velocity is set.
+    //containers cannot have velocity because they are not bodies
+    //TODO: check later
+    // this.physics.world.collide(
+    //   this.friendlySprites,
+    //   this.enemySprites,
+    //   (a, b) => {
+    //     console.log("collision");
+    //   }
+    // );
+  }
+
+  //no tiles
+  private collideFriendlyWithEnemyBullets(
+    friendlySprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile,
+    bulletSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile
+  ): void {
+    bulletSprite.destroy();
+    const physicsSprite =
+      friendlySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const unit = physicsSprite.getData("data");
+
+    this.friendlyArmy.removeUnit(unit);
+    this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
+
+    //TODO: destroy container, but not guns
+    //TODO: add dead bodies
   }
 
   private collideEnemyWithFriendlyBullets(
@@ -284,14 +303,20 @@ export class Game extends Scene {
       | Phaser.Types.Physics.Arcade.GameObjectWithBody
       | Phaser.Tilemaps.Tile
   ): void {
-    enemySprite.destroy();
-    bulletSprite.destroy();
+    const physicsSprite =
+      enemySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const unit = physicsSprite.getData("data");
 
-    this.enemySprites.remove(enemySprite as Phaser.GameObjects.GameObject);
+    bulletSprite.destroy();
+    this.enemyArmy.removeUnit(unit);
+
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
-    //TODO: slow?
+  }
+
+  private isGameOver(): boolean {
+    return false;
   }
 }

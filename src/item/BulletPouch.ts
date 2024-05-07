@@ -10,7 +10,7 @@ export class BulletPouch implements Item {
     this.quantity = 20;
   }
 
-  update(delta: number) {}
+  update(_delta: number) {}
 
   useItem(): string {
     return "item-bullet-pouch-used";

@@ -5,7 +5,7 @@ import { Item } from "./Item";
  */
 export class Knife implements Item {
   constructor() {}
-  update(delta: number) {}
+  update(_delta: number) {}
 
   useItem(): string {
     return "item-knife-used";
