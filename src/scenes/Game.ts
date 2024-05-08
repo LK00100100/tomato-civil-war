@@ -20,8 +20,8 @@ export class Game extends Scene {
   public enemyBullets: Phaser.Physics.Arcade.Group;
 
   //TODO: static enums
-  public static readonly teamA = 1;
-  public static readonly teamB = 2;
+  public static readonly TEAM_A = 1;
+  public static readonly TEAM_B = 2;
 
   //TODO: bullet pool
 
@@ -75,8 +75,8 @@ export class Game extends Scene {
 
     this.initKeyboard();
 
-    this.friendlyArmy = new Army(this, Game.teamA);
-    this.enemyArmy = new Army(this, Game.teamB);
+    this.friendlyArmy = new Army(this, Game.TEAM_A);
+    this.enemyArmy = new Army(this, Game.TEAM_B);
 
     this.tomato = UnitFactory.createTomato(this);
     const tomatoData: Unit = this.tomato.getData("data") as Unit;
@@ -181,7 +181,7 @@ export class Game extends Scene {
       const tomatoData: Tomato = this.tomato.getData("data");
       const event = tomatoData.doAction();
       if (event == "item-gun-fire") {
-        this.shootPlayerBullet();
+        this.shootBullet(tomatoData, Game.TEAM_A);
       }
 
       //set movement
@@ -201,23 +201,26 @@ export class Game extends Scene {
     this.camera.centerOn(playerX, playerY);
   }
 
-  /**
-   * Player is shooting a bullet
-   */
-  private shootPlayerBullet() {
+  public shootBullet(unit: Unit, teamNumber: number) {
+    const unitContainer = unit.getUnitContainer();
+
     const bulletSprite = this.physics.add.sprite(
-      this.tomato.x,
-      this.tomato.y,
+      unitContainer.x,
+      unitContainer.y,
       "item-bullet"
     );
 
     bulletSprite.setData("data", new Bullet());
 
     //note: when adding to group, velocity will be set to 0.
-    this.friendlyBullets.add(bulletSprite);
+    if (teamNumber == Game.TEAM_A) {
+      this.friendlyBullets.add(bulletSprite);
+    } else if (teamNumber == Game.TEAM_B) {
+      this.enemyBullets.add(bulletSprite);
+    }
 
     this.physics.velocityFromRotation(
-      this.tomato.rotation,
+      unitContainer.rotation,
       this.BULLET_SPEED,
       bulletSprite.body.velocity
     );

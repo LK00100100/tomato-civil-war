@@ -33,6 +33,10 @@ export abstract class Unit {
     this.isPlayerOwned = isPlayerOwned;
   }
 
+  /**
+   * Is player controlled?
+   * @returns
+   */
   getIsPlayerOwned() {
     return this.isPlayerOwned;
   }

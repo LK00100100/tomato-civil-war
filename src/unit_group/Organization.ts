@@ -19,6 +19,11 @@ export abstract class Organization {
   protected units: Set<Phaser.GameObjects.Container>;
 
   /**
+   * If the organization has no more units, morale is broken, or etc.
+   */
+  protected isDefeated: boolean;
+
+  /**
    * Stop distance before firing at enemies.
    * in pixels.
    */
@@ -43,6 +48,12 @@ export abstract class Organization {
     this.moveAngle = 0;
 
     this.engagementDistance = 4500;
+
+    this.isDefeated = false;
+  }
+
+  public getIsDefeated() {
+    return this.isDefeated || this.units.size == 0;
   }
 
   /**
@@ -140,11 +151,33 @@ export abstract class Organization {
       const unitSpeed = unit.getSpeed();
 
       //TODO: do tweening
-      //unitContainer.setAngle(angle);
       unitContainer.setAngle(this.moveAngle);
 
       unitContainer.x += xMovement * unitSpeed;
       unitContainer.y += yMovement * unitSpeed;
+    });
+  }
+
+  /**
+   * Tell this organization to attack what is in front of them
+   */
+  protected attackUnits() {
+    this.units.forEach((unitContainer) => {
+      const unit: Unit = unitContainer.getData("data");
+
+      //do not move player's units automatically.
+      if (unit.getIsPlayerOwned()) return;
+
+      //TODO: do tweening
+      unitContainer.setAngle(this.moveAngle);
+
+      const event = unit.doAction();
+
+      if (event == "item-gun-fire") {
+        this.game.shootBullet(unit, this.teamNumber);
+      }
+
+      //TODO: handle event better. event handler?
     });
   }
 }

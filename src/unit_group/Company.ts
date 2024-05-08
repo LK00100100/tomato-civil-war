@@ -55,6 +55,10 @@ export class Company extends Organization {
       this.moveUnits();
     }
 
+    if (this.isFireAtWill) {
+      this.attackUnits();
+    }
+
     if (this.duration >= Company.THINK_DURATION) {
       this.duration = 0;
 
@@ -64,7 +68,7 @@ export class Company extends Organization {
 
   protected findAndFightThreats(): void {
     let enemyArmy;
-    if (this.teamNumber == Game.teamA) {
+    if (this.teamNumber == Game.TEAM_A) {
       enemyArmy = this.game.getEnemyArmy();
     } else {
       enemyArmy = this.game.getFriendlyArmy();
@@ -79,6 +83,10 @@ export class Company extends Organization {
 
     const enemyOrgs = enemyArmy.getOrganizations();
     enemyOrgs.forEach((enemyOrg) => {
+      if (enemyOrg.getIsDefeated()) {
+        return;
+      }
+
       const enemyCoordinate = enemyOrg.getCenterPosition();
 
       let xDiff = Math.abs(enemyCoordinate.x - myCoordinate.x);
@@ -93,7 +101,11 @@ export class Company extends Organization {
     });
 
     //no enemies detected
-    if (closestEnemyOrg == null) return;
+    if (closestEnemyOrg == null) {
+      this.isFireAtWill = false;
+      this.isMoving = false;
+      return;
+    }
 
     //walk towards enemy
     if (closestEnemyOrgDistance > this.getEngagementDistance()) {
