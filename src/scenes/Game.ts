@@ -4,6 +4,7 @@ import { Bullet } from "../entity/Bullet";
 import { Company } from "../unit_group/Company";
 import { UnitFactory } from "../unit/UnitFactory";
 import { Army } from "../unit_group/Army";
+import { Unit } from "../unit/Unit";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -78,9 +79,11 @@ export class Game extends Scene {
     this.enemyArmy = new Army(this, Game.teamB);
 
     this.tomato = UnitFactory.createTomato(this);
+    const tomatoData: Unit = this.tomato.getData("data") as Unit;
+    tomatoData.setIsPlayerOwned(true);
 
     const yourCompany = new Company(this);
-    yourCompany.addUnit(this.tomato.getData("data"));
+    yourCompany.addUnit(tomatoData);
 
     this.friendlyArmy.addOrganization(yourCompany);
 
@@ -106,12 +109,13 @@ export class Game extends Scene {
     }
 
     this.enemyArmy.addOrganization(company);
-    this.enemyArmy.formUp(-700, -700);
+    this.enemyArmy.formUp(-700, -3700);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
-    sprites.getChildren().forEach((go) => {
-      const sprite = go as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    sprites.getChildren().forEach((gameObj) => {
+      const sprite =
+        gameObj as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
       sprite.setTint(0x87ceeb); // sky blue, makes dark red.
     });
   }
@@ -184,12 +188,12 @@ export class Game extends Scene {
     });
 
     //set player's tomato facing
+    this.input.mousePointer.updateWorldPoint(this.camera);
     const playerX = this.tomato.x;
     const playerY = this.tomato.y;
-    this.input.mousePointer.updateWorldPoint(this.camera);
     const mouseX = this.input.mousePointer.worldX;
     const mouseY = this.input.mousePointer.worldY;
-    var angle =
+    const angle =
       Phaser.Math.RAD_TO_DEG *
       Phaser.Math.Angle.Between(playerX, playerY, mouseX, mouseY);
     this.tomato.setAngle(angle);
@@ -314,6 +318,14 @@ export class Game extends Scene {
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
+  }
+
+  public getFriendlyArmy() {
+    return this.friendlyArmy;
+  }
+
+  public getEnemyArmy() {
+    return this.enemyArmy;
   }
 
   private isGameOver(): boolean {

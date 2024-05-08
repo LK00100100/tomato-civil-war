@@ -1,3 +1,4 @@
+import { Coordinate } from "../Coordinate";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
 import { Organization } from "./Organization";
@@ -7,7 +8,7 @@ import { Organization } from "./Organization";
  * 60 - 200 people
  */
 export class Company extends Organization {
-  private static readonly MAX_DURATION: 10000;
+  private static readonly THINK_DURATION = 1000;
 
   constructor(game: Game) {
     super(game);
@@ -50,14 +51,68 @@ export class Company extends Organization {
       unit.update(delta);
     });
 
-    if (this.duration >= Company.MAX_DURATION) {
+    if (this.isMoving) {
+      this.moveUnits();
+    }
+
+    if (this.duration >= Company.THINK_DURATION) {
       this.duration = 0;
 
-      this.assessThreats();
+      this.findAndFightThreats();
     }
   }
 
-  protected assessThreats(): void {
-    throw new Error("Method not implemented.");
+  protected findAndFightThreats(): void {
+    let enemyArmy;
+    if (this.teamNumber == Game.teamA) {
+      enemyArmy = this.game.getEnemyArmy();
+    } else {
+      enemyArmy = this.game.getFriendlyArmy();
+    }
+
+    const myCoordinate = this.getCenterPosition();
+
+    //find closest army
+    let closestEnemyOrg: Organization | null = null;
+    let closestEnemyOrgDistance = 1000000000;
+    let closestEnemyCoord: Coordinate | null = null;
+
+    const enemyOrgs = enemyArmy.getOrganizations();
+    enemyOrgs.forEach((enemyOrg) => {
+      const enemyCoordinate = enemyOrg.getCenterPosition();
+
+      let xDiff = Math.abs(enemyCoordinate.x - myCoordinate.x);
+      let yDiff = Math.abs(enemyCoordinate.y - myCoordinate.y);
+      let dist = xDiff + yDiff;
+
+      if (dist < closestEnemyOrgDistance) {
+        closestEnemyOrgDistance = dist;
+        closestEnemyOrg = enemyOrg;
+        closestEnemyCoord = enemyCoordinate;
+      }
+    });
+
+    //no enemies detected
+    if (closestEnemyOrg == null) return;
+
+    //walk towards enemy
+    if (closestEnemyOrgDistance > this.getEngagementDistance()) {
+      this.isFireAtWill = false;
+      this.isMoving = true;
+    }
+    //within range, stop and fire
+    else {
+      this.isFireAtWill = true;
+      this.isMoving = false;
+    }
+
+    this.moveAngle =
+      Phaser.Math.RAD_TO_DEG *
+      Phaser.Math.Angle.Between(
+        myCoordinate.x,
+        myCoordinate.y,
+        closestEnemyCoord!.x,
+        closestEnemyCoord!.y
+      );
   }
 }

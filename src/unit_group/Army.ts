@@ -30,6 +30,10 @@ export class Army {
     return this.unitHitSprites;
   }
 
+  getOrganizations() {
+    return this.armies;
+  }
+
   /**
    * Removes and destroys the unit (and hit box) from the Army.
    * @param unit

@@ -7,6 +7,8 @@ export abstract class Unit {
   protected hp: number;
   protected items: Array<Item>;
   protected selectedItem: number;
+  protected speed: number;
+  protected isPlayerOwned: boolean;
 
   protected unitContainer: Phaser.GameObjects.Container;
 
@@ -14,11 +16,25 @@ export abstract class Unit {
     this.hp = hp;
     this.items = [];
 
+    this.speed = 1;
     this.selectedItem = 0;
+    this.isPlayerOwned = false;
+  }
+
+  getSpeed() {
+    return this.speed;
   }
 
   getUnitContainer(): Phaser.GameObjects.Container {
     return this.unitContainer;
+  }
+
+  setIsPlayerOwned(isPlayerOwned: boolean) {
+    this.isPlayerOwned = isPlayerOwned;
+  }
+
+  getIsPlayerOwned() {
+    return this.isPlayerOwned;
   }
 
   /**
