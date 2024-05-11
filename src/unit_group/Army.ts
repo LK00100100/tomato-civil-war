@@ -70,7 +70,12 @@ export class Army {
 
   public formUp(x: number, y: number) {
     //TODO: fill more
-    this.armies[0].formUp(x, y, 10);
+
+    const rowSize = 10;
+    this.armies.forEach((org, idx) => {
+      const gap = idx * 500 * rowSize + 100;
+      org.formUp(x + gap, y, rowSize);
+    });
   }
 
   public update(delta: number) {

@@ -4,7 +4,8 @@
 export class Bullet {
   duration: number;
 
-  static readonly MAX_DURATION = 2000;
+  private static readonly MAX_DURATION = 3000;
+  public static readonly BULLET_SPEED = 3000;
 
   constructor() {
     this.duration = 0;

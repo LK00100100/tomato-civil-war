@@ -14,7 +14,6 @@ export class Game extends Scene {
   private tomato: Phaser.GameObjects.Container;
 
   public readonly MOVE_SPEED = 25;
-  public readonly BULLET_SPEED = 2000;
 
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
@@ -49,7 +48,7 @@ export class Game extends Scene {
     this.camera = this.cameras.main;
     this.camera.setBackgroundColor(0x00ff00);
     this.camera.centerOn(0, 0);
-    this.camera.setZoom(0.2);
+    this.camera.setZoom(0.1);
 
     this.background = this.add.image(0, 0, "background");
     this.background.setScale(50);
@@ -87,7 +86,9 @@ export class Game extends Scene {
 
     this.friendlyArmy.addOrganization(yourCompany);
 
-    this.makeEnemies(30);
+    this.makeEnemies(100);
+
+    this.makeFriends(100);
   }
 
   private initKeyboard() {
@@ -101,15 +102,17 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const company = new Company(this);
+    for (let c = 0; c < 10; c++) {
+      const company = new Company(this);
 
-    for (let i = 0; i < numEnemies; i++) {
-      const tomato = UnitFactory.createTomato(this);
-      company.addUnit(tomato.getData("data"));
+      for (let i = 0; i < numEnemies; i++) {
+        const tomato = UnitFactory.createTomato(this);
+        company.addUnit(tomato.getData("data"));
+      }
+
+      this.enemyArmy.addOrganization(company);
     }
-
-    this.enemyArmy.addOrganization(company);
-    this.enemyArmy.formUp(-700, -3700);
+    this.enemyArmy.formUp(-5000, -3700);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
@@ -118,6 +121,20 @@ export class Game extends Scene {
         gameObj as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
       sprite.setTint(0x87ceeb); // sky blue, makes dark red.
     });
+  }
+
+  private makeFriends(numUnits: number) {
+    for (let c = 0; c < 10; c++) {
+      const company = new Company(this);
+
+      for (let i = 0; i < numUnits; i++) {
+        const tomato = UnitFactory.createTomato(this);
+        company.addUnit(tomato.getData("data"));
+      }
+      this.friendlyArmy.addOrganization(company);
+    }
+
+    this.friendlyArmy.formUp(-15000, 20000);
   }
 
   /**
@@ -167,10 +184,10 @@ export class Game extends Scene {
     }
 
     if (this.keyZ.isDown) {
-      this.cameras.main.zoom -= 0.01;
+      this.cameras.main.zoom -= 0.005;
     }
     if (this.keyX.isDown) {
-      this.cameras.main.zoom += 0.01;
+      this.cameras.main.zoom += 0.005;
     }
 
     //player's left click
@@ -221,7 +238,7 @@ export class Game extends Scene {
 
     this.physics.velocityFromRotation(
       unitContainer.rotation,
-      this.BULLET_SPEED,
+      Bullet.BULLET_SPEED,
       bulletSprite.body.velocity
     );
   }

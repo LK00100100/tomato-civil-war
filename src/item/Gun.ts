@@ -11,7 +11,7 @@ export class Gun implements Item {
 
   duration: number; //current reload duration
 
-  static readonly MAX_RELOAD_DURATION = 1000;
+  static readonly MAX_RELOAD_DURATION = 5000;
 
   //TODO: need to load bullets
   constructor() {

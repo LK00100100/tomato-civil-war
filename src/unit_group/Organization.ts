@@ -47,7 +47,7 @@ export abstract class Organization {
 
     this.moveAngle = 0;
 
-    this.engagementDistance = 4500;
+    this.engagementDistance = 7500;
 
     this.isDefeated = false;
   }
