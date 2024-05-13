@@ -9,12 +9,24 @@ import { Unit } from "../unit/Unit";
 export abstract class Organization {
   protected teamNumber: number; //0, 1, 2, etc.
 
+  /**
+   * False is "do not fire" mode.
+   */
   protected isFireAtWill: boolean;
+
+  /**
+   * True, if set to move. False, if not set to move and not moving.
+   */
   protected isMoving: boolean;
+
+  /**
+   * True, if shooting or fighting now.
+   */
+  protected isEngaging: boolean;
 
   protected game: Game;
 
-  protected duration: number;
+  protected deltaDuration: number;
 
   protected units: Set<Phaser.GameObjects.Container>;
 
@@ -29,6 +41,16 @@ export abstract class Organization {
    */
   protected engagementDistance: number;
 
+  protected closestEnemyOrg: Organization | null;
+  /**
+   * If closestEnemyOrg is null, ignore this.
+   */
+  protected closestEnemyOrgDistance: number;
+  /**
+   * If closestEnemyOrg is null, ignore this.
+   */
+  protected closestEnemyCoord: Coordinate | null;
+
   /**
    * Where unit is facing. in terms of "Phaser angle degrees".
    * East is 0. West is 180/-180. North is -90. South is 90.
@@ -40,10 +62,11 @@ export abstract class Organization {
 
     this.units = new Set();
 
-    this.duration = 0;
+    this.deltaDuration = 0;
 
-    this.isFireAtWill = false;
-    this.isMoving = true;
+    this.isFireAtWill = true;
+    this.isMoving = false;
+    this.isEngaging = false;
 
     this.moveAngle = 0;
 
@@ -117,9 +140,15 @@ export abstract class Organization {
   }
 
   /**
-   * Tells the company to organize and form up.
+   * Draw the army on the battlefield in an organized manner.
    */
-  abstract formUp(x: number, y: number, rowSize: number): void;
+  abstract initFormation(x: number, y: number, rowSize: number): void;
+
+  /**
+   * Tells the company to organize and form up on the current rotation.
+   * Normally call this after losses.
+   */
+  protected formUp(): void {}
 
   /**
    * Update this organization's clock. For calculation.

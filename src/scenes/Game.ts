@@ -134,7 +134,7 @@ export class Game extends Scene {
       this.friendlyArmy.addOrganization(company);
     }
 
-    this.friendlyArmy.formUp(-15000, 20000);
+    this.friendlyArmy.formUp(-12000, 20000);
   }
 
   /**
@@ -184,10 +184,10 @@ export class Game extends Scene {
     }
 
     if (this.keyZ.isDown) {
-      this.cameras.main.zoom -= 0.005;
+      this.cameras.main.zoom -= 0.002;
     }
     if (this.keyX.isDown) {
-      this.cameras.main.zoom += 0.005;
+      this.cameras.main.zoom += 0.002;
     }
 
     //player's left click

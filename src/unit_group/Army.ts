@@ -74,7 +74,7 @@ export class Army {
     const rowSize = 10;
     this.armies.forEach((org, idx) => {
       const gap = idx * 500 * rowSize + 100;
-      org.formUp(x + gap, y, rowSize);
+      org.initFormation(x + gap, y, rowSize);
     });
   }
 
