@@ -1,5 +1,4 @@
 import { Game } from "../scenes/Game";
-import { Unit } from "../unit/Unit";
 import { Organization } from "./Organization";
 
 /**
@@ -7,75 +6,8 @@ import { Organization } from "./Organization";
  * 60 - 200 people
  */
 export class Company extends Organization {
-  private static readonly THINK_DURATION = 1000;
-
   constructor(game: Game) {
     super(game);
-  }
-
-  //TODO: rotation
-  /**
-   * form company starting with bottom-left.
-   * Go right, then go up.
-   * @param x
-   * @param y
-   */
-  public override initFormation(x: number, y: number, rowSize: number) {
-    let currentX = x;
-    let currentY = y;
-    let countPlaced = 0;
-    let currentRow = 0;
-
-    this.units.forEach((tomato) => {
-      tomato.setAngle(90);
-      tomato.setX(currentX);
-      tomato.setY(currentY);
-
-      currentX += 500;
-
-      countPlaced++;
-      if (countPlaced % rowSize == 0) {
-        currentX = currentRow % 2 == 0 ? x - 250 : x;
-        currentY -= 500;
-
-        currentRow++;
-      }
-    });
-  }
-
-  public override update(delta: number) {
-    this.deltaDuration += delta;
-
-    this.units.forEach((container) => {
-      const unit = container.getData("data") as Unit;
-      unit.update(delta);
-    });
-
-    if (this.isMoving) {
-      this.moveUnits();
-    }
-
-    if (this.isEngaging && this.isFireAtWill) {
-      this.attackUnits();
-
-      this.formUp();
-    }
-
-    //assess enemies
-    if (this.deltaDuration >= Company.THINK_DURATION) {
-      this.deltaDuration = 0;
-
-      //this company is currently busy fighting an active company
-      if (this.isEngaging) {
-        if (this.closestEnemyOrg!.getUnitCount() > 0) {
-          return;
-        }
-
-        this.isEngaging = false;
-      }
-
-      this.findAndFightThreats();
-    }
   }
 
   protected findAndFightThreats(): void {
@@ -130,7 +62,7 @@ export class Company extends Organization {
       this.isEngaging = true;
     }
 
-    this.moveAngle =
+    this.orgMoveAngle =
       Phaser.Math.RAD_TO_DEG *
       Phaser.Math.Angle.Between(
         myCoordinate.x,

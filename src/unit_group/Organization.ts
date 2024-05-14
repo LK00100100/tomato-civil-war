@@ -10,6 +10,18 @@ export abstract class Organization {
   protected teamNumber: number; //0, 1, 2, etc.
 
   /**
+   * nulls are dead units.
+   * 0th row is the first row towards enemy.
+   */
+  protected unitRows: Array<Array<Unit | null>>;
+  protected unitRowMap: Map<Unit, Coordinate>; //0-indexed
+
+  /**
+   * Individual units have to move somewhere.
+   */
+  protected unitToMoveMap: Map<Unit, Coordinate>;
+
+  /**
    * False is "do not fire" mode.
    */
   protected isFireAtWill: boolean;
@@ -55,12 +67,18 @@ export abstract class Organization {
    * Where unit is facing. in terms of "Phaser angle degrees".
    * East is 0. West is 180/-180. North is -90. South is 90.
    */
-  protected moveAngle: number;
+  protected orgMoveAngle: number;
+
+  private static readonly THINK_DURATION = 1000;
 
   constructor(game: Game) {
     this.game = game;
 
     this.units = new Set();
+
+    this.unitRows = [];
+    this.unitRowMap = new Map();
+    this.unitToMoveMap = new Map();
 
     this.deltaDuration = 0;
 
@@ -68,7 +86,7 @@ export abstract class Organization {
     this.isMoving = false;
     this.isEngaging = false;
 
-    this.moveAngle = 0;
+    this.orgMoveAngle = 0;
 
     this.engagementDistance = 7500;
 
@@ -112,12 +130,26 @@ export abstract class Organization {
     return this.units;
   }
 
+  /**
+   * Adds to this Organization. Doesn't add to row.
+   *
+   * Call initFormation() to add to rows.
+   * @param unit
+   */
   public addUnit(unit: Unit): void {
     this.units.add(unit.getUnitContainer());
   }
 
   public removeUnit(unit: Unit): void {
+    //all metadata already deleted
+    if (!this.unitRowMap.has(unit)) return;
+
     this.units.delete(unit.getUnitContainer());
+
+    const { x: col, y: row } = this.unitRowMap.get(unit)!;
+    this.unitRowMap.delete(unit);
+
+    this.unitRows[row][col] = null;
   }
 
   /**
@@ -142,19 +174,178 @@ export abstract class Organization {
   /**
    * Draw the army on the battlefield in an organized manner.
    */
-  abstract initFormation(x: number, y: number, rowSize: number): void;
+
+  //TODO: rotation
+  /**
+   * form company starting with bottom-left.
+   * Go right, then go up.
+   * @param x
+   * @param y
+   */
+  public initFormation(x: number, y: number, rowSize: number) {
+    let currentX = x;
+    let currentY = y;
+    let countPlaced = 0; //side note: could just use this through %
+    let currentRow = 0;
+    let currentCol = 0;
+
+    //TODO: use formUp() to draw
+    let unitRow: Array<Unit> = [];
+    this.units.forEach((tomato) => {
+      tomato.setAngle(90);
+      tomato.setX(currentX);
+      tomato.setY(currentY);
+
+      currentX += 500;
+
+      let unit = tomato.getData("data");
+      unitRow.push(unit);
+      this.unitRowMap.set(unit, { x: currentCol, y: currentRow });
+
+      currentCol++;
+      countPlaced++;
+      if (countPlaced % rowSize == 0) {
+        currentX = currentRow % 2 == 0 ? x - 250 : x;
+        currentY -= 500;
+
+        this.unitRows.push(unitRow);
+        unitRow = [];
+        currentRow++;
+        currentCol = 0;
+      }
+    });
+
+    if (unitRow.length != 0) this.unitRows.push(unitRow);
+  }
 
   /**
    * Tells the company to organize and form up on the current rotation.
+   * Push all units to the front rows to fill in all gaps, in closest-from-gap order.
+   * Removes null rows.
    * Normally call this after losses.
+   * @returns true if moved units;
    */
-  protected formUp(): void {}
+  protected formUp(): boolean {
+    if (!this.needsToReform()) return false;
+
+    if (this.unitRows.length <= 1) return false;
+
+    let movedSomething = false;
+    //move stuff up one row at a time until the gaps are filled for non-back rows
+    let nextRowCandidate = 1;
+    let nextColCandidate = 0;
+
+    const rowSize = this.unitRows[0].length;
+
+    for (let r = 0; r < this.unitRows.length - 1; r++) {
+      let row = this.unitRows[r];
+
+      if (nextRowCandidate <= r) {
+        nextRowCandidate = r + 1;
+        nextColCandidate = 0;
+      }
+
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] != null) continue;
+
+        //empty spot, find candidate to swap
+        let isFound = false;
+        while (nextRowCandidate != this.unitRows.length - 1 && !isFound) {
+          if (this.unitRows[nextRowCandidate][nextColCandidate] != null) {
+            isFound = true;
+
+            //swap
+            const unit: Unit =
+              this.unitRows[nextRowCandidate][nextColCandidate]!;
+            row[c] = unit;
+            this.unitRows[nextRowCandidate][nextColCandidate] = null;
+            movedSomething = true;
+
+            //update metadata
+            this.unitRowMap.set(unit, { x: c, y: r });
+          }
+
+          nextColCandidate++;
+
+          if (nextColCandidate == rowSize) {
+            nextRowCandidate += 1;
+            nextColCandidate = 0;
+          }
+        }
+      }
+
+      //no more people to move up
+      if (nextRowCandidate == this.unitRows.length) break;
+    }
+
+    //remove null rows
+    for (let row = this.unitRows.length - 1; row >= 0; row--) {
+      if (this.unitRows[row].every((elem) => elem == null)) this.unitRows.pop();
+    }
+
+    return movedSomething;
+  }
 
   /**
-   * Update this organization's clock. For calculation.
+   *
+   */
+  private calculateFormUp() {}
+
+  /**
+   * Returns true if units need to be pushed to the front rows.
+   * In other words, there are empety gaps in the non-back rows.
+   */
+  private needsToReform(): boolean {
+    for (const row of this.unitRows) {
+      //ignore last row
+      if (row == this.unitRows[length - 1]) break;
+
+      if (row.includes(null)) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Update this organization's action. For calculation.
    * @param delta time in millseconds since the last frame.
    */
-  abstract update(delta: number): void;
+  public update(delta: number) {
+    this.deltaDuration += delta;
+
+    this.units.forEach((container) => {
+      const unit = container.getData("data") as Unit;
+      unit.update(delta);
+    });
+
+    if (this.isMoving) {
+      this.moveUnits();
+    }
+
+    if (this.isEngaging && this.isFireAtWill) {
+      this.attackUnits();
+
+      //const needsFormUp = this.formUp();
+
+      //TODO: calculate formup
+    }
+
+    //assess enemies
+    if (this.deltaDuration >= Organization.THINK_DURATION) {
+      this.deltaDuration = 0;
+
+      //this company is currently busy fighting an active company
+      if (this.isEngaging) {
+        if (this.closestEnemyOrg!.getUnitCount() > 0) {
+          return;
+        }
+
+        this.isEngaging = false;
+      }
+
+      this.findAndFightThreats();
+    }
+  }
 
   /**
    * Observes visible units around this organization.
@@ -165,9 +356,12 @@ export abstract class Organization {
 
   /**
    * All units in this Organization steps forward (probably toward enemies).
+   *
+   * Firstly, if needed, move all individual units.
+   * If there are no such units, move the entire unit, if needed.
    */
   protected moveUnits() {
-    const angleToRad = this.moveAngle * Phaser.Math.DEG_TO_RAD;
+    const angleToRad = this.orgMoveAngle * Phaser.Math.DEG_TO_RAD;
     const xMovement = Math.cos(angleToRad);
     const yMovement = Math.sin(angleToRad);
 
@@ -179,11 +373,21 @@ export abstract class Organization {
 
       const unitSpeed = unit.getSpeed();
 
-      //TODO: do tweening
-      unitContainer.setAngle(this.moveAngle);
+      //move entire unit
+      if (this.unitToMoveMap.size == 0) {
+        //TODO: do tweening
+        unitContainer.setAngle(this.orgMoveAngle);
 
-      unitContainer.x += xMovement * unitSpeed;
-      unitContainer.y += yMovement * unitSpeed;
+        unitContainer.x += xMovement * unitSpeed;
+        unitContainer.y += yMovement * unitSpeed;
+        return;
+      }
+
+      if (!this.unitToMoveMap.has(unit)) return;
+
+      //move individuals
+      const targetCoord = this.unitToMoveMap.get(unit);
+      //TODO:
     });
   }
 
@@ -198,7 +402,7 @@ export abstract class Organization {
       if (unit.getIsPlayerOwned()) return;
 
       //TODO: do tweening
-      unitContainer.setAngle(this.moveAngle);
+      unitContainer.setAngle(this.orgMoveAngle);
 
       const event = unit.doAction();
 

@@ -68,7 +68,12 @@ export class Army {
     });
   }
 
-  public formUp(x: number, y: number) {
+  /**
+   * Call once to draw the army on the map.
+   * @param x
+   * @param y
+   */
+  public initFormation(x: number, y: number) {
     //TODO: fill more
 
     const rowSize = 10;

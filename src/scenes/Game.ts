@@ -102,7 +102,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    for (let c = 0; c < 10; c++) {
+    for (let c = 0; c < 3; c++) {
       const company = new Company(this);
 
       for (let i = 0; i < numEnemies; i++) {
@@ -112,7 +112,7 @@ export class Game extends Scene {
 
       this.enemyArmy.addOrganization(company);
     }
-    this.enemyArmy.formUp(-5000, -3700);
+    this.enemyArmy.initFormation(-5000, -3700);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
@@ -124,7 +124,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    for (let c = 0; c < 10; c++) {
+    for (let c = 0; c < 3; c++) {
       const company = new Company(this);
 
       for (let i = 0; i < numUnits; i++) {
@@ -134,7 +134,7 @@ export class Game extends Scene {
       this.friendlyArmy.addOrganization(company);
     }
 
-    this.friendlyArmy.formUp(-12000, 20000);
+    this.friendlyArmy.initFormation(-12000, 20000);
   }
 
   /**
@@ -143,14 +143,14 @@ export class Game extends Scene {
    * @param delta in milliseconds since last update
    */
   update(_: any, delta: any) {
+    //note: if people die first, then remove and stop processing them.
+    this.updateBullets(delta);
+    this.checkCollisions();
+
     this.enemyArmy.update(delta);
     this.friendlyArmy.update(delta);
 
     this.processInput(delta);
-
-    this.updateBullets(delta);
-
-    this.checkCollisions();
 
     if (this.isGameOver()) {
       console.log("game is over");
