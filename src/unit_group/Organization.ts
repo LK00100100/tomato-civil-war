@@ -235,8 +235,6 @@ export abstract class Organization {
     let nextRowCandidate = 1;
     let nextColCandidate = 0;
 
-    const rowSize = this.unitRows[0].length;
-
     for (let r = 0; r < this.unitRows.length - 1; r++) {
       let row = this.unitRows[r];
 
@@ -249,10 +247,10 @@ export abstract class Organization {
         if (row[c] != null) continue;
 
         //empty spot, find candidate to swap
-        let isFound = false;
-        while (nextRowCandidate != this.unitRows.length - 1 && !isFound) {
+        let didSwap = false;
+        while (nextRowCandidate < this.unitRows.length && !didSwap) {
           if (this.unitRows[nextRowCandidate][nextColCandidate] != null) {
-            isFound = true;
+            didSwap = true;
 
             //swap
             const unit: Unit =
@@ -267,7 +265,7 @@ export abstract class Organization {
 
           nextColCandidate++;
 
-          if (nextColCandidate == rowSize) {
+          if (nextColCandidate == row.length) {
             nextRowCandidate += 1;
             nextColCandidate = 0;
           }
@@ -325,7 +323,7 @@ export abstract class Organization {
     if (this.isEngaging && this.isFireAtWill) {
       this.attackUnits();
 
-      //const needsFormUp = this.formUp();
+      const needsFormUp = this.formUp();
 
       //TODO: calculate formup
     }
