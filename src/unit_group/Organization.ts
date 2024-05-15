@@ -185,26 +185,27 @@ export abstract class Organization {
 
   //TODO: rotation
   /**
-   * form company starting with bottom-left.
-   * Go right, then go up.
-   * @param x
-   * @param y
+   * Form and draw company.
+   * @param x army's center
+   * @param y army's center
+   * @param rowSize how many columns to put in the row.
+   * @param initAngle phaser angle to face
    */
-  public initFormation(x: number, y: number, rowSize: number) {
-    let currentX = x;
-    let currentY = y;
+  public initFormation(
+    x: number,
+    y: number,
+    rowSize: number,
+    initAngle: number
+  ) {
     let countPlaced = 0; //side note: could just use this through %
     let currentRow = 0;
     let currentCol = 0;
 
-    //TODO: use formUp() to draw
+    this.orgMoveAngle = initAngle;
+
     let unitRow: Array<Unit> = [];
     this.units.forEach((tomato) => {
-      tomato.setAngle(90);
-      tomato.setX(currentX);
-      tomato.setY(currentY);
-
-      currentX += Organization.FORMATION_GAP_PIXELS;
+      tomato.setAngle(initAngle);
 
       let unit = tomato.getData("data");
       unitRow.push(unit);
@@ -213,11 +214,6 @@ export abstract class Organization {
       currentCol++;
       countPlaced++;
       if (countPlaced % rowSize == 0) {
-        // prettier-ignore
-        currentX =
-          currentRow % 2 == 0 ? x - (Organization.FORMATION_GAP_PIXELS / 2) : x;
-        currentY -= Organization.FORMATION_GAP_PIXELS;
-
         this.unitRows.push(unitRow);
         unitRow = [];
         currentRow++;
@@ -225,7 +221,19 @@ export abstract class Organization {
       }
     });
 
+    //flush remainder
     if (unitRow.length != 0) this.unitRows.push(unitRow);
+
+    //draw units
+    this.calculateFormUpToMove({ x: x, y: y });
+
+    for (let [unit, targetCoord] of this.unitToMoveMap) {
+      const unitContainer = unit.getUnitContainer();
+      unitContainer.setX(targetCoord.x);
+      unitContainer.setY(targetCoord.y);
+    }
+
+    this.unitToMoveMap.clear();
   }
 
   /**
@@ -291,7 +299,7 @@ export abstract class Organization {
     }
 
     if (movedSomething) {
-      this.calculateFormUpToMove();
+      this.calculateFormUpToMove(this.getCenterPosition());
     }
 
     return movedSomething;
@@ -304,10 +312,10 @@ export abstract class Organization {
    * this will do nothing.
    * You can call formUp() before calling this
    * to move up units into the gap (not drawn).
+   *
+   * @param orgCoord center of organization
    */
-  private calculateFormUpToMove() {
-    const orgCoord = this.getCenterPosition();
-
+  private calculateFormUpToMove(orgCoord: Coordinate) {
     //get to top-left-corner of the formation
     //relative to the organization's direction
     const topLeftCornerAngle = Phaser.Math.Angle.WrapDegrees(
@@ -350,6 +358,8 @@ export abstract class Organization {
     for (let r = 0; r < this.unitRows.length; r++) {
       //prettier-ignore
       let currentX = cornerX + (xRowMagnitude * r);
+      if (r % 2 != 0) currentX += Organization.FORMATION_GAP_PIXELS / 2;
+
       //prettier-ignore
       let currentY = cornerY + (yRowMagnitude * r);
 

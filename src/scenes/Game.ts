@@ -113,7 +113,7 @@ export class Game extends Scene {
 
       this.enemyArmy.addOrganization(company);
     }
-    this.enemyArmy.initFormation(-6000, 0);
+    this.enemyArmy.initFormation(-6000, 0, 90);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
@@ -136,7 +136,7 @@ export class Game extends Scene {
       this.friendlyArmy.addOrganization(company);
     }
 
-    this.friendlyArmy.initFormation(-12000, 20000);
+    this.friendlyArmy.initFormation(-12000, 10000, -90);
   }
 
   /**
