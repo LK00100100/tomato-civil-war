@@ -102,7 +102,8 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    for (let c = 0; c < 3; c++) {
+    const numCompanies = 1;
+    for (let c = 0; c < numCompanies; c++) {
       const company = new Company(this);
 
       for (let i = 0; i < numEnemies; i++) {
@@ -124,7 +125,8 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    for (let c = 0; c < 3; c++) {
+    const numCompanies = 1;
+    for (let c = 0; c < numCompanies; c++) {
       const company = new Company(this);
 
       for (let i = 0; i < numUnits; i++) {

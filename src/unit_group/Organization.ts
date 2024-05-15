@@ -14,6 +14,9 @@ export abstract class Organization {
    * 0th row is the first row towards enemy.
    */
   protected unitRows: Array<Array<Unit | null>>;
+  /**
+   * Unit to row/col in the formation.
+   */
   protected unitRowMap: Map<Unit, Coordinate>; //0-indexed
 
   /**
@@ -28,11 +31,12 @@ export abstract class Organization {
 
   /**
    * True, if set to move. False, if not set to move and not moving.
+   * Not the same as forming up.
    */
   protected isMoving: boolean;
 
   /**
-   * True, if shooting or fighting now.
+   * True, if within engagement distance of an enemy.
    */
   protected isEngaging: boolean;
 
@@ -47,6 +51,7 @@ export abstract class Organization {
    */
   protected isDefeated: boolean;
 
+  //TODO: dynamically set this
   /**
    * Stop distance before firing at enemies.
    * in pixels.
@@ -63,13 +68,16 @@ export abstract class Organization {
    */
   protected closestEnemyCoord: Coordinate | null;
 
+  //TODO: set when initformation
   /**
    * Where unit is facing. in terms of "Phaser angle degrees".
    * East is 0. West is 180/-180. North is -90. South is 90.
+   * Generally facing last known enemy position.
    */
   protected orgMoveAngle: number;
 
   private static readonly THINK_DURATION = 1000;
+  private static readonly FORMATION_GAP_PIXELS = 500;
 
   constructor(game: Game) {
     this.game = game;
@@ -196,7 +204,7 @@ export abstract class Organization {
       tomato.setX(currentX);
       tomato.setY(currentY);
 
-      currentX += 500;
+      currentX += Organization.FORMATION_GAP_PIXELS;
 
       let unit = tomato.getData("data");
       unitRow.push(unit);
@@ -205,8 +213,10 @@ export abstract class Organization {
       currentCol++;
       countPlaced++;
       if (countPlaced % rowSize == 0) {
-        currentX = currentRow % 2 == 0 ? x - 250 : x;
-        currentY -= 500;
+        // prettier-ignore
+        currentX =
+          currentRow % 2 == 0 ? x - (Organization.FORMATION_GAP_PIXELS / 2) : x;
+        currentY -= Organization.FORMATION_GAP_PIXELS;
 
         this.unitRows.push(unitRow);
         unitRow = [];
@@ -222,12 +232,11 @@ export abstract class Organization {
    * Tells the company to organize and form up on the current rotation.
    * Push all units to the front rows to fill in all gaps, in closest-from-gap order.
    * Removes null rows.
+   * Also sets all the unit's target x,y to form up.
    * Normally call this after losses.
    * @returns true if moved units;
    */
   protected formUp(): boolean {
-    if (!this.needsToReform()) return false;
-
     if (this.unitRows.length <= 1) return false;
 
     let movedSomething = false;
@@ -253,14 +262,14 @@ export abstract class Organization {
             didSwap = true;
 
             //swap
-            const unit: Unit =
+            const candidate: Unit =
               this.unitRows[nextRowCandidate][nextColCandidate]!;
-            row[c] = unit;
+            row[c] = candidate;
             this.unitRows[nextRowCandidate][nextColCandidate] = null;
             movedSomething = true;
 
             //update metadata
-            this.unitRowMap.set(unit, { x: c, y: r });
+            this.unitRowMap.set(candidate, { x: c, y: r });
           }
 
           nextColCandidate++;
@@ -281,13 +290,83 @@ export abstract class Organization {
       if (this.unitRows[row].every((elem) => elem == null)) this.unitRows.pop();
     }
 
+    if (movedSomething) {
+      this.calculateFormUpToMove();
+    }
+
     return movedSomething;
   }
 
   /**
-   *
+   * Calculates the x, y each unit needs to go to
+   * in order to go back to looking like a formation.
+   * If everyone is already drawn in formation,
+   * this will do nothing.
+   * You can call formUp() before calling this
+   * to move up units into the gap (not drawn).
    */
-  private calculateFormUp() {}
+  private calculateFormUpToMove() {
+    const orgCoord = this.getCenterPosition();
+
+    //get to top-left-corner of the formation
+    //relative to the organization's direction
+    const topLeftCornerAngle = Phaser.Math.Angle.WrapDegrees(
+      this.orgMoveAngle - 45
+    );
+
+    //prettier-ignore
+    const halfWidth = (this.unitRows[0].length / 2) * Organization.FORMATION_GAP_PIXELS;
+    //prettier-ignore
+    const halfHeight = (this.unitRows.length / 2) * Organization.FORMATION_GAP_PIXELS;
+
+    const magnitudeToCorner = Math.sqrt(
+      Math.pow(halfWidth, 2) + Math.pow(halfHeight, 2)
+    );
+
+    const cornerAngleToRad = topLeftCornerAngle * Phaser.Math.DEG_TO_RAD;
+    const xMagnitude = Math.cos(cornerAngleToRad) * magnitudeToCorner;
+    const yMagnitude = Math.sin(cornerAngleToRad) * magnitudeToCorner;
+
+    const cornerX = orgCoord.x + xMagnitude;
+    const cornerY = orgCoord.y + yMagnitude;
+
+    //calc to next column direction
+    const angleToColumn = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 90);
+    const angleToColumnRad = angleToColumn * Phaser.Math.DEG_TO_RAD;
+    const xColumnMagnitude =
+      Math.cos(angleToColumnRad) * Organization.FORMATION_GAP_PIXELS;
+    const yColumnMagnitude =
+      Math.sin(angleToColumnRad) * Organization.FORMATION_GAP_PIXELS;
+
+    //calc to next row direction
+    const angleToRow = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 180);
+    const angleToRowRad = angleToRow * Phaser.Math.DEG_TO_RAD;
+    const xRowMagnitude =
+      Math.cos(angleToRowRad) * Organization.FORMATION_GAP_PIXELS;
+    const yRowMagnitude =
+      Math.sin(angleToRowRad) * Organization.FORMATION_GAP_PIXELS;
+
+    //set the x, y for every unit
+    for (let r = 0; r < this.unitRows.length; r++) {
+      //prettier-ignore
+      let currentX = cornerX + (xRowMagnitude * r);
+      //prettier-ignore
+      let currentY = cornerY + (yRowMagnitude * r);
+
+      for (let c = 0; c < this.unitRows[r].length; c++) {
+        const unit: Unit = this.unitRows[r][c]!;
+
+        if (unit == null) {
+          continue;
+        }
+
+        this.unitToMoveMap.set(unit, { x: currentX, y: currentY });
+
+        currentX += xColumnMagnitude;
+        currentY += yColumnMagnitude;
+      }
+    }
+  }
 
   /**
    * Returns true if units need to be pushed to the front rows.
@@ -316,16 +395,26 @@ export abstract class Organization {
       unit.update(delta);
     });
 
+    //move to target or move to form up
     if (this.isMoving) {
       this.moveUnits();
+    } else {
+      //move individual units
+      if (this.unitToMoveMap.size > 0) {
+        this.moveIndividualUnits();
+      }
     }
 
-    if (this.isEngaging && this.isFireAtWill) {
-      this.attackUnits();
+    if (this.isEngaging) {
+      if (this.isFireAtWill) {
+        this.attackUnits();
+      }
 
-      const needsFormUp = this.formUp();
+      const needsFormUp = this.needsToReform();
 
-      //TODO: calculate formup
+      if (needsFormUp) {
+        this.formUp();
+      }
     }
 
     //assess enemies
@@ -334,13 +423,16 @@ export abstract class Organization {
 
       //this company is currently busy fighting an active company
       if (this.isEngaging) {
+        //still fighting
         if (this.closestEnemyOrg!.getUnitCount() > 0) {
           return;
         }
 
+        //done fighting
         this.isEngaging = false;
       }
 
+      //not currently fighting anything. find a fight
       this.findAndFightThreats();
     }
   }
@@ -360,9 +452,10 @@ export abstract class Organization {
    */
   protected moveUnits() {
     const angleToRad = this.orgMoveAngle * Phaser.Math.DEG_TO_RAD;
-    const xMovement = Math.cos(angleToRad);
-    const yMovement = Math.sin(angleToRad);
+    const xMagnitude = Math.cos(angleToRad);
+    const yMagnitude = Math.sin(angleToRad);
 
+    //move entire units
     this.units.forEach((unitContainer) => {
       const unit: Unit = unitContainer.getData("data");
 
@@ -372,21 +465,49 @@ export abstract class Organization {
       const unitSpeed = unit.getSpeed();
 
       //move entire unit
-      if (this.unitToMoveMap.size == 0) {
-        //TODO: do tweening
-        unitContainer.setAngle(this.orgMoveAngle);
+      //TODO: do tweening
+      unitContainer.setAngle(this.orgMoveAngle);
 
-        unitContainer.x += xMovement * unitSpeed;
-        unitContainer.y += yMovement * unitSpeed;
-        return;
-      }
-
-      if (!this.unitToMoveMap.has(unit)) return;
-
-      //move individuals
-      const targetCoord = this.unitToMoveMap.get(unit);
-      //TODO:
+      unitContainer.x += xMagnitude * unitSpeed;
+      unitContainer.y += yMagnitude * unitSpeed;
     });
+  }
+
+  /**
+   * Move units as individuals according to the x, y in the unitToMoveMap.
+   */
+  private moveIndividualUnits() {
+    for (let [unit, targetCoord] of this.unitToMoveMap.entries()) {
+      const unitContainer = unit.getUnitContainer();
+
+      let distanceToTarget = Phaser.Math.Distance.Between(
+        unitContainer.x,
+        unitContainer.y,
+        targetCoord.x,
+        targetCoord.y
+      );
+
+      let unitSpeed = Math.min(distanceToTarget, unit.getSpeed());
+
+      const targetAngle =
+        Phaser.Math.RAD_TO_DEG *
+        Phaser.Math.Angle.Between(
+          unitContainer.x,
+          unitContainer.y,
+          targetCoord.x,
+          targetCoord.y
+        );
+
+      const angleToRad = targetAngle * Phaser.Math.DEG_TO_RAD;
+      const xMagnitude = Math.cos(angleToRad);
+      const yMagnitude = Math.sin(angleToRad);
+
+      const xMove = xMagnitude * unitSpeed;
+      const yMove = yMagnitude * unitSpeed;
+
+      unitContainer.x += xMove;
+      unitContainer.y += yMove;
+    }
   }
 
   /**
