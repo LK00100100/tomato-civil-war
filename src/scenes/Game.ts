@@ -86,7 +86,7 @@ export class Game extends Scene {
 
     this.friendlyArmy.addOrganization(yourCompany);
 
-    this.makeEnemies(50);
+    this.makeEnemies(10);
 
     this.makeFriends(100);
   }
@@ -102,7 +102,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 1;
+    const numCompanies = 10;
     for (let c = 0; c < numCompanies; c++) {
       const company = new Company(this);
 

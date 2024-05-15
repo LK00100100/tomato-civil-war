@@ -225,7 +225,7 @@ export abstract class Organization {
     if (unitRow.length != 0) this.unitRows.push(unitRow);
 
     //draw units
-    this.calculateFormUpToMove({ x: x, y: y });
+    this.calculateFormUpToMove({ x: x, y: y }, this.orgMoveAngle);
 
     for (let [unit, targetCoord] of this.unitToMoveMap) {
       const unitContainer = unit.getUnitContainer();
@@ -248,10 +248,10 @@ export abstract class Organization {
     if (this.unitRows.length <= 1) return false;
 
     let movedSomething = false;
-    //move stuff up one row at a time until the gaps are filled for non-back rows
     let nextRowCandidate = 1;
     let nextColCandidate = 0;
 
+    //move stuff up one row at a time until the gaps are filled for non-back rows
     for (let r = 0; r < this.unitRows.length - 1; r++) {
       let row = this.unitRows[r];
 
@@ -266,12 +266,13 @@ export abstract class Organization {
         //empty spot, find candidate to swap
         let didSwap = false;
         while (nextRowCandidate < this.unitRows.length && !didSwap) {
-          if (this.unitRows[nextRowCandidate][nextColCandidate] != null) {
+          const candidate: Unit =
+            this.unitRows[nextRowCandidate][nextColCandidate]!;
+
+          if (candidate != null) {
             didSwap = true;
 
             //swap
-            const candidate: Unit =
-              this.unitRows[nextRowCandidate][nextColCandidate]!;
             row[c] = candidate;
             this.unitRows[nextRowCandidate][nextColCandidate] = null;
             movedSomething = true;
@@ -299,7 +300,7 @@ export abstract class Organization {
     }
 
     if (movedSomething) {
-      this.calculateFormUpToMove(this.getCenterPosition());
+      this.calculateFormUpToMove(this.getCenterPosition(), this.orgMoveAngle);
     }
 
     return movedSomething;
@@ -314,13 +315,12 @@ export abstract class Organization {
    * to move up units into the gap (not drawn).
    *
    * @param orgCoord center of organization
+   * @param facingAngle Phaser angle to face
    */
-  private calculateFormUpToMove(orgCoord: Coordinate) {
+  private calculateFormUpToMove(orgCoord: Coordinate, facingAngle: number) {
     //get to top-left-corner of the formation
     //relative to the organization's direction
-    const topLeftCornerAngle = Phaser.Math.Angle.WrapDegrees(
-      this.orgMoveAngle - 45
-    );
+    const topLeftCornerAngle = Phaser.Math.Angle.WrapDegrees(facingAngle - 45);
 
     //prettier-ignore
     const halfWidth = (this.unitRows[0].length / 2) * Organization.FORMATION_GAP_PIXELS;
