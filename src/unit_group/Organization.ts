@@ -68,7 +68,6 @@ export abstract class Organization {
    */
   protected closestEnemyCoord: Coordinate | null;
 
-  //TODO: set when initformation
   /**
    * Where unit is facing. in terms of "Phaser angle degrees".
    * East is 0. West is 180/-180. North is -90. South is 90.
@@ -77,7 +76,7 @@ export abstract class Organization {
   protected orgMoveAngle: number;
 
   private static readonly THINK_DURATION = 1000;
-  private static readonly FORMATION_GAP_PIXELS = 500;
+  private static readonly TOMATO_WIDTH_PIXELS = 256;
 
   constructor(game: Game) {
     this.game = game;
@@ -322,10 +321,22 @@ export abstract class Organization {
     //relative to the organization's direction
     const topLeftCornerAngle = Phaser.Math.Angle.WrapDegrees(facingAngle - 45);
 
+    this.game.add.rectangle(orgCoord.x, orgCoord.y, 100, 100, 0x00008b); //dark blue
+
     //prettier-ignore
-    const halfWidth = (this.unitRows[0].length / 2) * Organization.FORMATION_GAP_PIXELS;
+    let halfWidth = Math.floor(this.unitRows[0].length / 2);
+    if (this.unitRows[0].length % 2 == 0) {
+      halfWidth -= 0.5;
+    }
+
+    halfWidth *= Organization.TOMATO_WIDTH_PIXELS;
     //prettier-ignore
-    const halfHeight = (this.unitRows.length / 2) * Organization.FORMATION_GAP_PIXELS;
+    let halfHeight = Math.floor(this.unitRows.length / 2);
+    if (this.unitRows.length % 2 == 0) {
+      halfHeight -= 0.5;
+    }
+
+    halfHeight *= Organization.TOMATO_WIDTH_PIXELS;
 
     const magnitudeToCorner = Math.sqrt(
       Math.pow(halfWidth, 2) + Math.pow(halfHeight, 2)
@@ -338,27 +349,31 @@ export abstract class Organization {
     const cornerX = orgCoord.x + xMagnitude;
     const cornerY = orgCoord.y + yMagnitude;
 
+    //TODO: delete
+    this.game.add.rectangle(cornerX, cornerY, 100, 100, 0x00ffff); //aqua
+
     //calc to next column direction
     const angleToColumn = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 90);
     const angleToColumnRad = angleToColumn * Phaser.Math.DEG_TO_RAD;
     const xColumnMagnitude =
-      Math.cos(angleToColumnRad) * Organization.FORMATION_GAP_PIXELS;
+      Math.cos(angleToColumnRad) * Organization.TOMATO_WIDTH_PIXELS;
     const yColumnMagnitude =
-      Math.sin(angleToColumnRad) * Organization.FORMATION_GAP_PIXELS;
+      Math.sin(angleToColumnRad) * Organization.TOMATO_WIDTH_PIXELS;
 
     //calc to next row direction
     const angleToRow = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 180);
     const angleToRowRad = angleToRow * Phaser.Math.DEG_TO_RAD;
     const xRowMagnitude =
-      Math.cos(angleToRowRad) * Organization.FORMATION_GAP_PIXELS;
+      Math.cos(angleToRowRad) * Organization.TOMATO_WIDTH_PIXELS;
+    //prettier-ignore
     const yRowMagnitude =
-      Math.sin(angleToRowRad) * Organization.FORMATION_GAP_PIXELS;
+      Math.sin(angleToRowRad) * (Organization.TOMATO_WIDTH_PIXELS);
 
     //set the x, y for every unit
     for (let r = 0; r < this.unitRows.length; r++) {
       //prettier-ignore
       let currentX = cornerX + (xRowMagnitude * r);
-      if (r % 2 != 0) currentX += Organization.FORMATION_GAP_PIXELS / 2;
+      //if (r % 2 != 0) currentX += Organization.FORMATION_GAP_PIXELS / 2;
 
       //prettier-ignore
       let currentY = cornerY + (yRowMagnitude * r);

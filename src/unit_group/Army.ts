@@ -72,12 +72,15 @@ export class Army {
    * Call once to draw the army on the map.
    * @param x
    * @param y
+   * @param rowSize columns in a row
    * @param initRotation phaser angle for formation
    */
-  public initFormation(x: number, y: number, initAngle: number) {
-    //TODO: fill more
-
-    const rowSize = 10;
+  public initFormation(
+    x: number,
+    y: number,
+    rowSize: number,
+    initAngle: number
+  ) {
     this.armies.forEach((org, idx) => {
       const gap = idx * 500 * rowSize + 100;
       org.initFormation(x + gap, y, rowSize, initAngle);
