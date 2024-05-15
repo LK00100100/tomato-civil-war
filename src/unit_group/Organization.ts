@@ -356,11 +356,9 @@ export abstract class Organization {
       for (let c = 0; c < this.unitRows[r].length; c++) {
         const unit: Unit = this.unitRows[r][c]!;
 
-        if (unit == null) {
-          continue;
+        if (unit != null) {
+          this.unitToMoveMap.set(unit, { x: currentX, y: currentY });
         }
-
-        this.unitToMoveMap.set(unit, { x: currentX, y: currentY });
 
         currentX += xColumnMagnitude;
         currentY += yColumnMagnitude;
