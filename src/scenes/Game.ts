@@ -86,7 +86,8 @@ export class Game extends Scene {
 
     this.friendlyArmy.addOrganization(yourCompany);
 
-    this.makeEnemies(10);
+    //note: 10k units = significant lag
+    this.makeEnemies(100);
 
     this.makeFriends(100);
   }
@@ -102,7 +103,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 10;
+    const numCompanies = 20;
     for (let c = 0; c < numCompanies; c++) {
       const company = new Company(this);
 
@@ -113,7 +114,7 @@ export class Game extends Scene {
 
       this.enemyArmy.addOrganization(company);
     }
-    this.enemyArmy.initFormation(-6000, 0, 10, -90);
+    this.enemyArmy.initFormation(-6000, 0, 10, 90);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
@@ -125,7 +126,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 1;
+    const numCompanies = 20;
     for (let c = 0; c < numCompanies; c++) {
       const company = new Company(this);
 
