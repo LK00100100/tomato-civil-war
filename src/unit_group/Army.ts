@@ -82,7 +82,8 @@ export class Army {
     initAngle: number
   ) {
     this.armies.forEach((org, idx) => {
-      const gap = idx * 500 * rowSize + 100;
+      //prettier-ignore
+      const gap = idx * ((500 * rowSize) + 1000);
       org.initFormation(x + gap, y, rowSize, initAngle);
     });
   }

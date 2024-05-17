@@ -7,6 +7,11 @@ import { Unit } from "../unit/Unit";
  * Draws, calculates, and orders Units under the Organization.
  */
 export abstract class Organization {
+  /**
+   * Name for this Organization. Preferably unique.
+   */
+  protected name: string;
+
   protected teamNumber: number; //0, 1, 2, etc.
 
   /**
@@ -20,7 +25,7 @@ export abstract class Organization {
   protected unitRowMap: Map<Unit, Coordinate>; //0-indexed
 
   /**
-   * Individual units have to move somewhere.
+   * Individual units have to move somewhere or form up.
    */
   protected unitToMoveMap: Map<Unit, Coordinate>;
 
@@ -34,6 +39,11 @@ export abstract class Organization {
    * Not the same as forming up.
    */
   protected isMoving: boolean;
+
+  /**
+   * True, if needs to form up (movement set).
+   */
+  protected isFormingUp: boolean;
 
   /**
    * True, if within engagement distance of an enemy.
@@ -78,8 +88,9 @@ export abstract class Organization {
   private static readonly THINK_DURATION = 1000;
   private static readonly TOMATO_WIDTH_PIXELS = 256;
 
-  constructor(game: Game) {
+  constructor(game: Game, name: string) {
     this.game = game;
+    this.name = name;
 
     this.units = new Set();
 
@@ -437,19 +448,18 @@ export abstract class Organization {
       unit.update(delta);
     });
 
-    //move to target or move to form up
-    if (this.isMoving) {
-      this.moveUnits();
+    //move to direction-angle or move to form up
+    if (this.unitToMoveMap.size > 0) {
+      this.moveIndividualUnits();
     } else {
-      //move individual units
-      if (this.unitToMoveMap.size > 0) {
-        this.moveIndividualUnits();
+      if (this.isMoving) {
+        this.moveUnits();
       }
     }
 
     if (this.isEngaging) {
       if (this.isFireAtWill) {
-        this.attackUnits();
+        this.fire();
       }
 
       const needsFormUp = this.needsToReform();
@@ -529,7 +539,13 @@ export abstract class Organization {
         targetCoord.y
       );
 
-      let unitSpeed = Math.min(distanceToTarget, unit.getSpeed());
+      let unitSpeed = unit.getSpeed();
+
+      //we've arrived
+      if (distanceToTarget <= unitSpeed) {
+        this.unitToMoveMap.delete(unit);
+        unitSpeed = distanceToTarget;
+      }
 
       const targetAngle =
         Phaser.Math.RAD_TO_DEG *
@@ -555,7 +571,7 @@ export abstract class Organization {
   /**
    * Tell this organization to attack what is in front of them
    */
-  protected attackUnits() {
+  protected fire() {
     this.units.forEach((unitContainer) => {
       const unit: Unit = unitContainer.getData("data");
 

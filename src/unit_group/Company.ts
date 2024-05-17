@@ -6,8 +6,8 @@ import { Organization } from "./Organization";
  * 60 - 200 people
  */
 export class Company extends Organization {
-  constructor(game: Game) {
-    super(game);
+  constructor(game: Game, name: string) {
+    super(game, name);
   }
 
   protected findAndFightThreats(): void {

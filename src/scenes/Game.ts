@@ -81,15 +81,15 @@ export class Game extends Scene {
     const tomatoData: Unit = this.tomato.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
 
-    const yourCompany = new Company(this);
+    const yourCompany = new Company(this, "1-company-player");
     yourCompany.addUnit(tomatoData);
 
     this.friendlyArmy.addOrganization(yourCompany);
 
     //note: 10k units = significant lag
-    this.makeEnemies(100);
+    this.makeEnemies(50);
 
-    this.makeFriends(100);
+    this.makeFriends(50);
   }
 
   private initKeyboard() {
@@ -103,9 +103,10 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 20;
+    const numCompanies = 3;
     for (let c = 0; c < numCompanies; c++) {
-      const company = new Company(this);
+      const name = "B-company-" + c;
+      const company = new Company(this, name);
 
       for (let i = 0; i < numEnemies; i++) {
         const tomato = UnitFactory.createTomato(this);
@@ -126,9 +127,10 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 20;
+    const numCompanies = 3;
     for (let c = 0; c < numCompanies; c++) {
-      const company = new Company(this);
+      const name = "A-company-" + c;
+      const company = new Company(this, name);
 
       for (let i = 0; i < numUnits; i++) {
         const tomato = UnitFactory.createTomato(this);
@@ -334,8 +336,8 @@ export class Game extends Scene {
       enemySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
     const unit = physicsSprite.getData("data");
 
-    bulletSprite.destroy();
     this.enemyArmy.removeUnit(unit);
+    bulletSprite.destroy();
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
 
