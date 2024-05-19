@@ -11,7 +11,7 @@ export class Gun implements Item {
 
   duration: number; //current reload duration
 
-  static readonly MAX_RELOAD_DURATION = 5000;
+  static readonly MAX_RELOAD_DURATION = 3000;
 
   //TODO: need to load bullets
   constructor() {
@@ -30,7 +30,6 @@ export class Gun implements Item {
       this.duration = 0;
       this.isReloading = false;
       this.isLoaded = true;
-      console.log("reload complete");
     }
   }
 

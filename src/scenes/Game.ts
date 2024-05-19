@@ -81,15 +81,15 @@ export class Game extends Scene {
     const tomatoData: Unit = this.tomato.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
 
-    const yourCompany = new Company(this, "1-company-player");
+    const yourCompany = new Company(this, "A-company-player");
     yourCompany.addUnit(tomatoData);
 
     this.friendlyArmy.addOrganization(yourCompany);
 
     //note: 10k units = significant lag
-    this.makeEnemies(50);
+    this.makeEnemies(100);
 
-    this.makeFriends(50);
+    this.makeFriends(100);
   }
 
   private initKeyboard() {
@@ -115,7 +115,7 @@ export class Game extends Scene {
 
       this.enemyArmy.addOrganization(company);
     }
-    this.enemyArmy.initFormation(-6000, 0, 10, 90);
+    this.enemyArmy.initFormation(-6000, 0, 20, 90);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();
@@ -127,7 +127,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 3;
+    const numCompanies = 4;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);

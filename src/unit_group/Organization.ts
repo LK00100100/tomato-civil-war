@@ -35,10 +35,10 @@ export abstract class Organization {
   protected isFireAtWill: boolean;
 
   /**
-   * True, if set to move. False, if not set to move and not moving.
+   * True, if set to walk forward.
    * Not the same as forming up.
    */
-  protected isMoving: boolean;
+  protected isMovingForward: boolean;
 
   /**
    * True, if needs to form up (movement set).
@@ -85,7 +85,7 @@ export abstract class Organization {
    */
   protected orgMoveAngle: number;
 
-  private static readonly THINK_DURATION = 1000;
+  private static readonly ASSESS_ENEMY_DURATION = 2000;
   private static readonly TOMATO_WIDTH_PIXELS = 256;
 
   constructor(game: Game, name: string) {
@@ -101,7 +101,7 @@ export abstract class Organization {
     this.deltaDuration = 0;
 
     this.isFireAtWill = true;
-    this.isMoving = false;
+    this.isMovingForward = false;
     this.isEngaging = false;
 
     this.orgMoveAngle = 0;
@@ -265,9 +265,7 @@ export abstract class Organization {
    * Normally call this after losses.
    * @returns true if moved units;
    */
-  protected formUp(): boolean {
-    if (this.unitRows.length <= 1) return false;
-
+  protected fillGapsAndCalculateFormup(): boolean {
     let movedSomething = false;
     let nextRowCandidate = 1;
     let nextColCandidate = 0;
@@ -320,11 +318,61 @@ export abstract class Organization {
       if (this.unitRows[row].every((elem) => elem == null)) this.unitRows.pop();
     }
 
+    //for the last row, push units more towards the middle
+    if (this.unitRows.length >= 1) {
+      const lastRowNum = this.unitRows.length - 1;
+      const lastRow = this.unitRows[lastRowNum];
+
+      const midLeft = Math.ceil(lastRow.length / 2) - 1; //or mid spot..
+      const midRight = midLeft + 1;
+
+      const numUnitsInRow = lastRow.filter((x) => x != null).length;
+
+      const numLeftSpots = Math.ceil(numUnitsInRow / 2); //can have 1 more.
+      const numRightSpots = numUnitsInRow - numLeftSpots;
+
+      //does the middle need to be filled?
+      const leftEdge = midLeft - numLeftSpots + 1;
+      const rightEdge = midRight + numRightSpots - 1;
+      let needsFilling = false;
+
+      for (let i = leftEdge; i <= rightEdge; i++) {
+        if (lastRow[i] == null) {
+          needsFilling = true;
+          break;
+        }
+      }
+
+      //fill up the middle
+      if (needsFilling == true) {
+        movedSomething = true;
+
+        const units = lastRow.filter((x) => x != null);
+
+        lastRow.fill(null);
+
+        for (let i = rightEdge; i >= leftEdge; i--) {
+          lastRow[i] = units.pop()!;
+
+          // update metadata
+          this.unitRowMap.set(lastRow[i]!, { x: i, y: lastRowNum });
+        }
+      }
+    }
+
     if (movedSomething) {
       this.calculateFormUpToMove(this.getCenterPosition(), this.orgMoveAngle);
     }
 
     return movedSomething;
+  }
+
+  /**
+   * Calculates the x,y for each individual to rotate.
+   * @param rotateAngle phaser angle to rotate (degrees)
+   */
+  protected calculateRotateArmy(rotateAngle: number) {
+    this.calculateFormUpToMove(this.getCenterPosition(), rotateAngle);
   }
 
   /**
@@ -425,7 +473,7 @@ export abstract class Organization {
    * Returns true if units need to be pushed to the front rows.
    * In other words, there are empety gaps in the non-back rows.
    */
-  private needsToReform(): boolean {
+  private needsToFillGaps(): boolean {
     for (const row of this.unitRows) {
       //ignore last row
       if (row == this.unitRows[length - 1]) break;
@@ -441,6 +489,8 @@ export abstract class Organization {
    * @param delta time in millseconds since the last frame.
    */
   public update(delta: number) {
+    if (this.getIsDefeated()) return;
+
     this.deltaDuration += delta;
 
     this.units.forEach((container) => {
@@ -452,8 +502,8 @@ export abstract class Organization {
     if (this.unitToMoveMap.size > 0) {
       this.moveIndividualUnits();
     } else {
-      if (this.isMoving) {
-        this.moveUnits();
+      if (this.isMovingForward) {
+        this.moveUnitsForward();
       }
     }
 
@@ -462,18 +512,18 @@ export abstract class Organization {
         this.fire();
       }
 
-      const needsFormUp = this.needsToReform();
+      const needsToFillGaps = this.needsToFillGaps();
 
-      if (needsFormUp) {
-        this.formUp();
+      if (needsToFillGaps) {
+        this.fillGapsAndCalculateFormup();
       }
     }
 
     //assess enemies
-    if (this.deltaDuration >= Organization.THINK_DURATION) {
+    if (this.deltaDuration >= Organization.ASSESS_ENEMY_DURATION) {
       this.deltaDuration = 0;
 
-      //this company is currently busy fighting an active company
+      //this company is currently firing at the enemy
       if (this.isEngaging) {
         //still fighting
         if (this.closestEnemyOrg!.getUnitCount() > 0) {
@@ -482,10 +532,17 @@ export abstract class Organization {
 
         //done fighting
         this.isEngaging = false;
+        console.log(`${this.name}: completed fighting`);
       }
 
-      //not currently fighting anything. find a fight
+      console.log(`${this.name}: finding new threat`);
+      //not currently fighting anything. get closer to the fight
       this.findAndFightThreats();
+
+      if (this.closestEnemyOrg != null) {
+        this.calculateRotateArmy(this.orgMoveAngle);
+        console.log(`${this.name}: rotating`);
+      }
     }
   }
 
@@ -493,8 +550,73 @@ export abstract class Organization {
    * Observes visible units around this organization.
    * Then maybe picks a target to fight.
    */
-  //TODO: think more. maybe bring this up to the army
-  protected abstract findAndFightThreats(): void;
+  protected findAndFightThreats(): void {
+    let enemyArmy;
+    if (this.teamNumber == Game.TEAM_A) {
+      enemyArmy = this.game.getEnemyArmy();
+    } else {
+      enemyArmy = this.game.getFriendlyArmy();
+    }
+
+    const myCoordinate = this.getCenterPosition();
+
+    //find closest army
+    this.closestEnemyOrg = null;
+    this.closestEnemyOrgDistance = 1000000000;
+    this.closestEnemyCoord = null;
+
+    const enemyOrgs = enemyArmy.getOrganizations();
+    enemyOrgs.forEach((enemyOrg) => {
+      if (enemyOrg.getIsDefeated()) {
+        return;
+      }
+
+      const enemyCoordinate = enemyOrg.getCenterPosition();
+
+      let xDiff = Math.abs(enemyCoordinate.x - myCoordinate.x);
+      let yDiff = Math.abs(enemyCoordinate.y - myCoordinate.y);
+      let dist = xDiff + yDiff;
+
+      if (dist < this.closestEnemyOrgDistance) {
+        this.closestEnemyOrgDistance = dist;
+        this.closestEnemyOrg = enemyOrg;
+        this.closestEnemyCoord = enemyCoordinate;
+      }
+    });
+
+    //no enemies detected
+    if (this.closestEnemyOrg == null) {
+      this.isFireAtWill = false;
+      this.isMovingForward = false;
+      return;
+    }
+
+    //walk towards enemy
+    if (this.closestEnemyOrgDistance > this.getEngagementDistance()) {
+      console.log(`${this.name} : set to move`);
+      this.isMovingForward = true;
+      this.isEngaging = false;
+    }
+    //within range, stop and fire
+    else {
+      console.log(`${this.name} : stop and engage`);
+      this.isMovingForward = false;
+      this.isEngaging = true;
+    }
+
+    this.orgMoveAngle =
+      Phaser.Math.RAD_TO_DEG *
+      Phaser.Math.Angle.Between(
+        myCoordinate.x,
+        myCoordinate.y,
+        this.closestEnemyCoord!.x,
+        this.closestEnemyCoord!.y
+      );
+
+    const enemyOrgName = (this.closestEnemyOrg as any as Organization).name;
+    console.log(`${this.name} : angle is ${this.orgMoveAngle}`);
+    console.log(`${this.name} : is fighting ${enemyOrgName}`);
+  }
 
   /**
    * All units in this Organization steps forward (probably toward enemies).
@@ -502,7 +624,7 @@ export abstract class Organization {
    * Firstly, if needed, move all individual units.
    * If there are no such units, move the entire unit, if needed.
    */
-  protected moveUnits() {
+  protected moveUnitsForward() {
     const angleToRad = this.orgMoveAngle * Phaser.Math.DEG_TO_RAD;
     const xMagnitude = Math.cos(angleToRad);
     const yMagnitude = Math.sin(angleToRad);
@@ -511,7 +633,7 @@ export abstract class Organization {
     this.units.forEach((unitContainer) => {
       const unit: Unit = unitContainer.getData("data");
 
-      //do not move player's units automatically.
+      //do not move player's units for them.
       if (unit.getIsPlayerOwned()) return;
 
       const unitSpeed = unit.getSpeed();
@@ -530,6 +652,11 @@ export abstract class Organization {
    */
   private moveIndividualUnits() {
     for (let [unit, targetCoord] of this.unitToMoveMap.entries()) {
+      if (unit.getIsPlayerOwned()) {
+        this.unitToMoveMap.delete(unit);
+        continue;
+      }
+
       const unitContainer = unit.getUnitContainer();
 
       let distanceToTarget = Phaser.Math.Distance.Between(
@@ -575,7 +702,7 @@ export abstract class Organization {
     this.units.forEach((unitContainer) => {
       const unit: Unit = unitContainer.getData("data");
 
-      //do not move player's units automatically.
+      //do not touch player's units for them.
       if (unit.getIsPlayerOwned()) return;
 
       //TODO: do tweening
