@@ -46,13 +46,13 @@ export class Game extends Scene {
      * camera junk
      */
     this.camera = this.cameras.main;
-    this.camera.setBackgroundColor(0x00ff00);
+    this.camera.setBackgroundColor(0x006400);
     this.camera.centerOn(0, 0);
     this.camera.setZoom(0.1);
 
     this.background = this.add.image(0, 0, "background");
     this.background.setScale(50);
-    this.background.setAlpha(0.5);
+    this.background.setAlpha(0.1);
 
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
@@ -90,6 +90,10 @@ export class Game extends Scene {
     this.makeEnemies(100);
 
     this.makeFriends(100);
+
+    //move player to center
+    this.tomato.x += 15200;
+    this.tomato.y += 1000;
   }
 
   private initKeyboard() {
@@ -115,7 +119,7 @@ export class Game extends Scene {
 
       this.enemyArmy.addOrganization(company);
     }
-    this.enemyArmy.initFormation(-6000, 0, 20, 90);
+    this.enemyArmy.initFormation(-6000, 0, 15, 90);
 
     //add enemy tint
     const sprites = this.enemyArmy.getUnitHitSprites();

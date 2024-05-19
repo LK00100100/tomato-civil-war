@@ -53,7 +53,8 @@ export abstract class Organization {
 
   protected game: Game;
 
-  protected deltaDuration: number;
+  protected deltaAssessEnemyDuration: number;
+  protected deltaAssessFightDuration: number;
 
   protected units: Set<Phaser.GameObjects.Container>;
 
@@ -80,6 +81,11 @@ export abstract class Organization {
   protected closestEnemyCoord: Coordinate | null;
 
   /**
+   * Whenever there has been a loss, you'll need to fill in the gaps
+   */
+  protected needsReform: boolean;
+
+  /**
    * Where unit is facing. in terms of "Phaser angle degrees".
    * East is 0. West is 180/-180. North is -90. South is 90.
    * Generally facing last known enemy position.
@@ -87,6 +93,9 @@ export abstract class Organization {
   protected orgMoveAngle: number;
 
   private static readonly ASSESS_ENEMY_DURATION = 2000;
+  private static readonly ASSESS_FIGHTING_DURATION = 5000;
+
+  private static readonly MINIMUM_ENGAGEMENT_DISTANCE = 9000;
   private static readonly TOMATO_WIDTH_PIXELS = 256;
 
   constructor(game: Game, name: string) {
@@ -99,7 +108,8 @@ export abstract class Organization {
     this.unitRowMap = new Map();
     this.unitToMoveMap = new Map();
 
-    this.deltaDuration = 0;
+    this.deltaAssessEnemyDuration = 0;
+    this.deltaAssessFightDuration = 0;
 
     this.isFireAtWill = true;
     this.isMovingForward = false;
@@ -107,13 +117,14 @@ export abstract class Organization {
 
     this.orgMoveAngle = 0;
 
-    this.engagementDistance = 7500;
+    this.engagementDistance = Organization.MINIMUM_ENGAGEMENT_DISTANCE;
 
+    this.needsReform = false;
     this.isDefeated = false;
   }
 
   public getIsDefeated() {
-    return this.isDefeated || this.units.size == 0;
+    return this.isDefeated;
   }
 
   /**
@@ -171,13 +182,24 @@ export abstract class Organization {
     this.unitRows[row][col] = null;
 
     this.unitToMoveMap.delete(unit);
+
+    this.needsReform = true;
+
+    if (this.units.size == 0) {
+      this.isDefeated = true;
+    }
   }
 
   /**
    * Gets the average x, y position of all units in this Organization.
+   * If there are no units, throws error.
    * @returns
    */
   public getCenterPosition(): Coordinate {
+    if (this.units.size == 0) {
+      throw new Error("no units, therefore no position");
+    }
+
     let totalX = 0;
     let totalY = 0;
 
@@ -201,11 +223,6 @@ export abstract class Organization {
     };
   }
 
-  /**
-   * Draw the army on the battlefield in an organized manner.
-   */
-
-  //TODO: rotation
   /**
    * Form and draw company.
    * @param x army's center
@@ -267,7 +284,7 @@ export abstract class Organization {
    * @returns true if moved units;
    */
   protected fillGapsAndCalculateFormup(): boolean {
-    let movedSomething = false;
+    let movedAUnit = false;
     let nextRowCandidate = 1;
     let nextColCandidate = 0;
 
@@ -295,7 +312,7 @@ export abstract class Organization {
             //swap
             row[c] = candidate;
             this.unitRows[nextRowCandidate][nextColCandidate] = null;
-            movedSomething = true;
+            movedAUnit = true;
 
             //update metadata
             this.unitRowMap.set(candidate, { col: c, row: r });
@@ -346,7 +363,7 @@ export abstract class Organization {
 
       //fill up the middle
       if (needsFilling == true) {
-        movedSomething = true;
+        movedAUnit = true;
 
         const units = lastRow.filter((x) => x != null);
 
@@ -361,11 +378,11 @@ export abstract class Organization {
       }
     }
 
-    if (movedSomething) {
+    if (movedAUnit) {
       this.calculateFormUpToMove(this.getCenterPosition(), this.orgMoveAngle);
     }
 
-    return movedSomething;
+    return movedAUnit;
   }
 
   /**
@@ -471,28 +488,14 @@ export abstract class Organization {
   }
 
   /**
-   * Returns true if units need to be pushed to the front rows.
-   * In other words, there are empety gaps in the non-back rows.
-   */
-  private needsToFillGaps(): boolean {
-    for (const row of this.unitRows) {
-      //ignore last row
-      if (row == this.unitRows[length - 1]) break;
-
-      if (row.includes(null)) return true;
-    }
-
-    return false;
-  }
-
-  /**
    * Update this organization's action. For calculation.
    * @param delta time in millseconds since the last frame.
    */
   public update(delta: number) {
     if (this.getIsDefeated()) return;
 
-    this.deltaDuration += delta;
+    this.deltaAssessEnemyDuration += delta;
+    this.deltaAssessFightDuration += delta;
 
     this.units.forEach((container) => {
       const unit = container.getData("data") as Unit;
@@ -512,37 +515,74 @@ export abstract class Organization {
       if (this.isFireAtWill) {
         this.fire();
       }
-
-      const needsToFillGaps = this.needsToFillGaps();
-
-      if (needsToFillGaps) {
-        this.fillGapsAndCalculateFormup();
-      }
     }
 
-    //assess enemies
-    if (this.deltaDuration >= Organization.ASSESS_ENEMY_DURATION) {
-      this.deltaDuration = 0;
+    //assess enemies often
+    if (this.deltaAssessEnemyDuration >= Organization.ASSESS_ENEMY_DURATION) {
+      this.deltaAssessEnemyDuration = 0;
 
       //this company is currently firing at the enemy
       if (this.isEngaging) {
-        //still fighting
-        if (this.closestEnemyOrg!.getUnitCount() > 0) {
-          return;
+        if (this.closestEnemyOrg!.getIsDefeated()) {
+          //done fighting
+          this.isEngaging = false;
+          console.log(`${this.name}: completed fighting`);
         }
+      }
+      //currently not fighting, need a fight
+      else {
+        console.log(`${this.name}: finding new threat`);
+        //not currently fighting anything. get closer to the fight
+        this.findAndFightThreats();
 
-        //done fighting
-        this.isEngaging = false;
-        console.log(`${this.name}: completed fighting`);
+        //face towards new enemy
+        if (this.closestEnemyOrg != null) {
+          this.calculateRotateArmy(this.orgMoveAngle);
+          console.log(`${this.name}: rotating`);
+        }
+      }
+    }
+
+    //assess while fighting every now and then
+    if (
+      this.deltaAssessFightDuration >= Organization.ASSESS_FIGHTING_DURATION
+    ) {
+      this.deltaAssessFightDuration = 0;
+
+      //not fighting, do nothing
+      if (!this.isEngaging) {
+        return;
       }
 
-      console.log(`${this.name}: finding new threat`);
-      //not currently fighting anything. get closer to the fight
-      this.findAndFightThreats();
+      //probably already rotating.
+      if (this.unitToMoveMap.size > 0) {
+        return;
+      }
 
-      if (this.closestEnemyOrg != null) {
-        this.calculateRotateArmy(this.orgMoveAngle);
-        console.log(`${this.name}: rotating`);
+      //rotate to face enemy's probably new center after losses.
+      if (
+        this.closestEnemyOrg != null &&
+        !this.closestEnemyOrg!.getIsDefeated()
+      ) {
+        const myCoordinate = this.getCenterPosition();
+        const enemyCoordinate = this.closestEnemyOrg!.getCenterPosition();
+        this.orgMoveAngle =
+          Phaser.Math.RAD_TO_DEG *
+          Phaser.Math.Angle.Between(
+            myCoordinate.x,
+            myCoordinate.y,
+            enemyCoordinate.x,
+            enemyCoordinate.y
+          );
+      }
+
+      console.log(`${this.name}: rotating under combat`);
+      //TODO: this causes some shifting for some reason
+      //this.calculateRotateArmy(this.orgMoveAngle);
+      if (this.needsReform) {
+        console.log(`${this.name}: reforming under combat`);
+        this.fillGapsAndCalculateFormup(); //this causes a mass disappearance???
+        this.needsReform = false;
       }
     }
   }
@@ -585,7 +625,7 @@ export abstract class Organization {
       }
     });
 
-    //no enemies detected
+    //no more enemies at all
     if (this.closestEnemyOrg == null) {
       this.isFireAtWill = false;
       this.isMovingForward = false;
