@@ -1,4 +1,5 @@
 import { Coordinate } from "../Coordinate";
+import { Position } from "../Position";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
 
@@ -22,7 +23,7 @@ export abstract class Organization {
   /**
    * Unit to row/col in the formation.
    */
-  protected unitRowMap: Map<Unit, Coordinate>; //0-indexed
+  protected unitRowMap: Map<Unit, Position>; //0-indexed
 
   /**
    * Individual units have to move somewhere or form up.
@@ -164,7 +165,7 @@ export abstract class Organization {
 
     this.units.delete(unit.getUnitContainer());
 
-    const { x: col, y: row } = this.unitRowMap.get(unit)!;
+    const { col, row } = this.unitRowMap.get(unit)!;
     this.unitRowMap.delete(unit);
 
     this.unitRows[row][col] = null;
@@ -230,7 +231,7 @@ export abstract class Organization {
 
       let unit = tomato.getData("data");
       unitRow.push(unit);
-      this.unitRowMap.set(unit, { x: currentCol, y: currentRow });
+      this.unitRowMap.set(unit, { col: currentCol, row: currentRow });
 
       currentCol++;
       countPlaced++;
@@ -297,7 +298,7 @@ export abstract class Organization {
             movedSomething = true;
 
             //update metadata
-            this.unitRowMap.set(candidate, { x: c, y: r });
+            this.unitRowMap.set(candidate, { col: c, row: r });
           }
 
           nextColCandidate++;
@@ -355,7 +356,7 @@ export abstract class Organization {
           lastRow[i] = units.pop()!;
 
           // update metadata
-          this.unitRowMap.set(lastRow[i]!, { x: i, y: lastRowNum });
+          this.unitRowMap.set(lastRow[i]!, { col: i, row: lastRowNum });
         }
       }
     }
@@ -704,6 +705,13 @@ export abstract class Organization {
 
       //do not touch player's units for them.
       if (unit.getIsPlayerOwned()) return;
+
+      const unitPosition = this.unitRowMap.get(unit)!;
+
+      //do not fire if not in the first 2 rows.
+      if (unitPosition.row >= 2) {
+        return;
+      }
 
       //TODO: do tweening
       unitContainer.setAngle(this.orgMoveAngle);
