@@ -18,6 +18,8 @@ export abstract class Organization {
   /**
    * nulls are dead units.
    * 0th row is the first row towards enemy.
+   * Number of columns are set when init.
+   * Always a rectangle.shape.
    */
   protected unitRows: Array<Array<Unit | null>>;
   /**
@@ -49,7 +51,7 @@ export abstract class Organization {
   /**
    * True, if within engagement distance of an enemy.
    */
-  protected isEngaging: boolean;
+  protected isActivelyFighting: boolean;
 
   protected game: Game;
 
@@ -90,7 +92,7 @@ export abstract class Organization {
    * East is 0. West is 180/-180. North is -90. South is 90.
    * Generally facing last known enemy position.
    */
-  protected orgMoveAngle: number;
+  protected orgFaceAngle: number;
 
   private static readonly ASSESS_ENEMY_DURATION = 2000;
   private static readonly ASSESS_FIGHTING_DURATION = 5000;
@@ -113,9 +115,9 @@ export abstract class Organization {
 
     this.isFireAtWill = true;
     this.isMovingForward = false;
-    this.isEngaging = false;
+    this.isActivelyFighting = false;
 
-    this.orgMoveAngle = 0;
+    this.orgFaceAngle = 0;
 
     this.engagementDistance = Organization.MINIMUM_ENGAGEMENT_DISTANCE;
 
@@ -190,8 +192,11 @@ export abstract class Organization {
     }
   }
 
+  //TODO: set unit tests
+  //TODO: perhaps get center of empty units
   /**
-   * Gets the average x, y position of all units in this Organization.
+   * Tries to draw a box around remaining units.
+   * Imagine the first row only has the right half. The center is the center of that.
    * If there are no units, throws error.
    * @returns
    */
@@ -200,26 +205,157 @@ export abstract class Organization {
       throw new Error("no units, therefore no position");
     }
 
-    let totalX = 0;
-    let totalY = 0;
+    if (this.units.size == 1) {
+      for (let unitContainer of this.units) {
+        return {
+          x: unitContainer.x,
+          y: unitContainer.y,
+        };
+      }
+    }
 
-    this.units.forEach((unit) => {
-      totalX += unit.x;
-      totalY += unit.y;
-    });
+    const numRows = this.unitRows.length;
+    const numCols = this.unitRows[0].length; //all rows are the same size
+
+    let frontMostUnit: Unit | null = null;
+    let backMostUnit: Unit | null = null;
+    let leftMostUnit: Unit | null = null; //left of first row
+    let rightMostUnit: Unit | null = null;
+
+    let hasLeftOffset = false; //an even row sticks out left
+    let hasRightOffset = false; //an odd row sticks out right
+
+    //get front most unit
+    for (let r = 0; r < numRows; r++) {
+      for (let c = 0; c < numCols; c++) {
+        const unit = this.unitRows[r][c];
+        if (unit == null) continue;
+
+        if (frontMostUnit == null) {
+          frontMostUnit = unit;
+          break;
+        }
+      }
+
+      if (frontMostUnit != null) break;
+    }
+
+    //get back most unit
+    for (let r = numRows - 1; r >= 0; r--) {
+      for (let c = 0; c < numCols; c++) {
+        const unit = this.unitRows[r][c];
+        if (unit == null) continue;
+
+        if (backMostUnit == null) {
+          backMostUnit = unit;
+          break;
+        }
+      }
+
+      if (backMostUnit != null) break;
+    }
+
+    //get left most unit (if tie, get left offset)
+    for (let c = 0; c < numCols; c++) {
+      for (let r = 0; r < numRows; r++) {
+        const unit = this.unitRows[r][c];
+        if (unit == null) continue;
+
+        if (leftMostUnit == null) {
+          leftMostUnit = unit;
+        }
+
+        //any even rows stick out to the left
+        if (r % 2 == 0) {
+          hasLeftOffset = true;
+          break;
+        }
+      }
+
+      if (leftMostUnit != null) break;
+    }
+
+    //get right most unit, (if tie, get right offset)
+    for (let c = numCols - 1; c >= 0; c--) {
+      for (let r = 0; r < numRows; r++) {
+        const unit = this.unitRows[r][c];
+        if (unit == null) continue;
+
+        if (rightMostUnit == null) {
+          rightMostUnit = unit;
+        }
+
+        //any odd rows stick out to the right
+        if (r % 2 != 0) {
+          hasRightOffset = true;
+          break;
+        }
+      }
+
+      if (rightMostUnit != null) break;
+    }
+
+    const realNumRows =
+      this.unitRowMap.get(backMostUnit!)!.row -
+      this.unitRowMap.get(frontMostUnit!)!.row +
+      1;
+    const realNumColumns =
+      this.unitRowMap.get(rightMostUnit!)!.col -
+      this.unitRowMap.get(leftMostUnit!)!.col +
+      1;
+
+    const estimatedFacingAngle = frontMostUnit!.getUnitContainer().angle;
+
+    //toward next column
+    const angleToRight = Phaser.Math.Angle.WrapDegrees(
+      estimatedFacingAngle + 90
+    );
+    const angleToRightRad = angleToRight * Phaser.Math.DEG_TO_RAD;
+    let toRightXMagnitude =
+      Math.cos(angleToRightRad) * Organization.TOMATO_WIDTH_PIXELS;
+    let toRightYMagnitude =
+      Math.sin(angleToRightRad) * Organization.TOMATO_WIDTH_PIXELS;
+
+    //toward next rows (upward)
+    const angleToUpRowRad = estimatedFacingAngle * Phaser.Math.DEG_TO_RAD;
+    const toFrontXMagnitude =
+      Math.cos(angleToUpRowRad) * Organization.TOMATO_WIDTH_PIXELS;
+    //prettier-ignore
+    const toFrontYMagnitude =
+      Math.sin(angleToUpRowRad) * (Organization.TOMATO_WIDTH_PIXELS);
+
+    //step horiontally towards center
+    //prettier-ignore
+    let armyUnitWidth = (realNumColumns * 2) - 1; //army's number of units wide
+    if (hasLeftOffset && hasRightOffset) {
+      armyUnitWidth += 1;
+    }
+
+    const leftUnitContainer = leftMostUnit!.getUnitContainer();
+    //prettier-ignore
+    const numRightStepsToCenter = (armyUnitWidth / 2) - 0.5;
+
+    //prettier-ignore
+    let totalX = leftUnitContainer.x + (toRightXMagnitude * numRightStepsToCenter);
+    //prettier-ignore
+    let totalY = leftUnitContainer.y + (toRightYMagnitude * numRightStepsToCenter);
+
+    //make vertical steps to center
+    const currentRow = this.unitRowMap.get(leftMostUnit!)!.row;
+    //prettier-ignore
+    const middleRow = (realNumRows / 2.0) - 0.5;
+    //can be negative (go left on negative, otherwise step right)
+    const numVerticalStepsToCenter = currentRow - middleRow;
+
+    totalX += toFrontXMagnitude * numVerticalStepsToCenter;
+    totalY += toFrontYMagnitude * numVerticalStepsToCenter;
 
     //TODO:
-    this.game.add.rectangle(
-      totalX / this.units.size,
-      totalY / this.units.size,
-      100,
-      100,
-      0xffa500
-    );
+    this.game.add.rectangle(totalX, totalY, 100, 100, 0xffa500); //orange rectangle
 
     return {
-      x: totalX / this.units.size,
-      y: totalY / this.units.size,
+      x: totalX,
+      y: totalY,
     };
   }
 
@@ -240,7 +376,7 @@ export abstract class Organization {
     let currentRow = 0;
     let currentCol = 0;
 
-    this.orgMoveAngle = initAngle;
+    this.orgFaceAngle = initAngle;
 
     let unitRow: Array<Unit> = [];
     this.units.forEach((tomato) => {
@@ -264,7 +400,7 @@ export abstract class Organization {
     if (unitRow.length != 0) this.unitRows.push(unitRow);
 
     //draw units
-    this.calculateFormUpToMove({ x: x, y: y }, this.orgMoveAngle);
+    this.calculateFormUpToMove({ x: x, y: y }, this.orgFaceAngle);
 
     for (let [unit, targetCoord] of this.unitToMoveMap) {
       const unitContainer = unit.getUnitContainer();
@@ -379,7 +515,7 @@ export abstract class Organization {
     }
 
     if (movedAUnit) {
-      this.calculateFormUpToMove(this.getCenterPosition(), this.orgMoveAngle);
+      this.calculateFormUpToMove(this.getCenterPosition(), this.orgFaceAngle);
     }
 
     return movedAUnit;
@@ -387,10 +523,12 @@ export abstract class Organization {
 
   /**
    * Calculates the x,y for each individual to rotate.
+   * Set the army's rotate angle.
    * @param rotateAngle phaser angle to rotate (degrees)
    */
   protected calculateRotateArmy(rotateAngle: number) {
     this.calculateFormUpToMove(this.getCenterPosition(), rotateAngle);
+    this.orgFaceAngle = rotateAngle;
   }
 
   /**
@@ -400,16 +538,19 @@ export abstract class Organization {
    * this will do nothing.
    * You can call formUp() before calling this
    * to move up units into the gap (not drawn).
+   * Set org's angle.
    *
    * @param orgCoord center of organization
    * @param facingAngle Phaser angle to face
    */
   private calculateFormUpToMove(orgCoord: Coordinate, facingAngle: number) {
+    console.log(`${this.name} : calculateFormUpToMove()`);
     //get to top-left-corner of the formation
     //relative to the organization's direction
 
     //TODO: set isDebug mode
     this.game.add.rectangle(orgCoord.x, orgCoord.y, 100, 100, 0x00008b); //dark blue
+    console.log(`${this.name} form up at ${orgCoord.x}, ${orgCoord.y}`);
 
     //prettier-ignore
     let halfWidth = Math.floor(this.unitRows[0].length)  - 0.5;
@@ -446,7 +587,7 @@ export abstract class Organization {
     this.game.add.rectangle(cornerX, cornerY, 100, 100, 0x00ffff); //aqua
 
     //calc to next column direction
-    const angleToColumn = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 90);
+    const angleToColumn = Phaser.Math.Angle.WrapDegrees(this.orgFaceAngle + 90);
     const angleToColumnRad = angleToColumn * Phaser.Math.DEG_TO_RAD;
     const xColumnMagnitude =
       Math.cos(angleToColumnRad) * Organization.TOMATO_WIDTH_PIXELS * 2;
@@ -454,7 +595,7 @@ export abstract class Organization {
       Math.sin(angleToColumnRad) * Organization.TOMATO_WIDTH_PIXELS * 2;
 
     //calc to next row direction
-    const angleToRow = Phaser.Math.Angle.WrapDegrees(this.orgMoveAngle + 180);
+    const angleToRow = Phaser.Math.Angle.WrapDegrees(this.orgFaceAngle + 180);
     const angleToRowRad = angleToRow * Phaser.Math.DEG_TO_RAD;
     const xRowMagnitude =
       Math.cos(angleToRowRad) * Organization.TOMATO_WIDTH_PIXELS;
@@ -485,6 +626,8 @@ export abstract class Organization {
         currentY += yColumnMagnitude;
       }
     }
+
+    this.orgFaceAngle = facingAngle;
   }
 
   /**
@@ -511,7 +654,7 @@ export abstract class Organization {
       }
     }
 
-    if (this.isEngaging) {
+    if (this.isActivelyFighting) {
       if (this.isFireAtWill) {
         this.fire();
       }
@@ -522,23 +665,25 @@ export abstract class Organization {
       this.deltaAssessEnemyDuration = 0;
 
       //this company is currently firing at the enemy
-      if (this.isEngaging) {
+      if (this.isActivelyFighting) {
         if (this.closestEnemyOrg!.getIsDefeated()) {
           //done fighting
-          this.isEngaging = false;
+          this.isActivelyFighting = false;
           console.log(`${this.name}: completed fighting`);
         }
       }
-      //currently not fighting, need a fight
+      //enemy too far away
       else {
         console.log(`${this.name}: finding new threat`);
         //not currently fighting anything. get closer to the fight
         this.findAndFightThreats();
 
-        //face towards new enemy
-        if (this.closestEnemyOrg != null) {
-          this.calculateRotateArmy(this.orgMoveAngle);
-          console.log(`${this.name}: rotating`);
+        //face towards new enemy, if needed
+        //TODO: make a method for unitToMoveMap.size == 0
+        if (this.closestEnemyOrg != null && this.unitToMoveMap.size == 0) {
+          //TODO: this causes back-sliding for some reason. but i know this method works well?
+          console.log(`${this.name}: rotating towards far enemy`);
+          this.calculateRotateArmy(this.orgFaceAngle);
         }
       }
     }
@@ -550,7 +695,7 @@ export abstract class Organization {
       this.deltaAssessFightDuration = 0;
 
       //not fighting, do nothing
-      if (!this.isEngaging) {
+      if (!this.isActivelyFighting) {
         return;
       }
 
@@ -566,7 +711,7 @@ export abstract class Organization {
       ) {
         const myCoordinate = this.getCenterPosition();
         const enemyCoordinate = this.closestEnemyOrg!.getCenterPosition();
-        this.orgMoveAngle =
+        this.orgFaceAngle =
           Phaser.Math.RAD_TO_DEG *
           Phaser.Math.Angle.Between(
             myCoordinate.x,
@@ -636,16 +781,16 @@ export abstract class Organization {
     if (this.closestEnemyOrgDistance > this.getEngagementDistance()) {
       console.log(`${this.name} : set to move`);
       this.isMovingForward = true;
-      this.isEngaging = false;
+      this.isActivelyFighting = false;
     }
     //within range, stop and fire
     else {
       console.log(`${this.name} : stop and engage`);
       this.isMovingForward = false;
-      this.isEngaging = true;
+      this.isActivelyFighting = true;
     }
 
-    this.orgMoveAngle =
+    this.orgFaceAngle =
       Phaser.Math.RAD_TO_DEG *
       Phaser.Math.Angle.Between(
         myCoordinate.x,
@@ -655,7 +800,7 @@ export abstract class Organization {
       );
 
     const enemyOrgName = (this.closestEnemyOrg as any as Organization).name;
-    console.log(`${this.name} : angle is ${this.orgMoveAngle}`);
+    console.log(`${this.name} : angle is ${this.orgFaceAngle}`);
     console.log(`${this.name} : is fighting ${enemyOrgName}`);
   }
 
@@ -666,7 +811,7 @@ export abstract class Organization {
    * If there are no such units, move the entire unit, if needed.
    */
   protected moveUnitsForward() {
-    const angleToRad = this.orgMoveAngle * Phaser.Math.DEG_TO_RAD;
+    const angleToRad = this.orgFaceAngle * Phaser.Math.DEG_TO_RAD;
     const xMagnitude = Math.cos(angleToRad);
     const yMagnitude = Math.sin(angleToRad);
 
@@ -681,7 +826,7 @@ export abstract class Organization {
 
       //move entire unit
       //TODO: do tweening
-      unitContainer.setAngle(this.orgMoveAngle);
+      unitContainer.setAngle(this.orgFaceAngle);
 
       unitContainer.x += xMagnitude * unitSpeed;
       unitContainer.y += yMagnitude * unitSpeed;
@@ -699,6 +844,7 @@ export abstract class Organization {
       }
 
       const unitContainer = unit.getUnitContainer();
+      unitContainer.setAngle(this.orgFaceAngle);
 
       let distanceToTarget = Phaser.Math.Distance.Between(
         unitContainer.x,
@@ -754,7 +900,7 @@ export abstract class Organization {
       }
 
       //TODO: do tweening
-      unitContainer.setAngle(this.orgMoveAngle);
+      unitContainer.setAngle(this.orgFaceAngle);
 
       const event = unit.doAction();
 
