@@ -37,6 +37,12 @@ export class Game extends Scene {
   private keyZ: Phaser.Input.Keyboard.Key;
   private keyX: Phaser.Input.Keyboard.Key;
 
+  /**
+   * audios
+   */
+
+  private audioHitmaker: Phaser.Sound.BaseSound;
+
   constructor() {
     super("Game");
   }
@@ -56,6 +62,8 @@ export class Game extends Scene {
 
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
+
+    this.audioHitmaker = this.sound.add("hitmarker-player");
 
     this.msg_text = this.add.text(
       400,
@@ -107,7 +115,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 3;
+    const numCompanies = 5;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -131,7 +139,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 4;
+    const numCompanies = 6;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);
@@ -207,7 +215,9 @@ export class Game extends Scene {
       const tomatoData: Tomato = this.tomato.getData("data");
       const event = tomatoData.doAction();
       if (event == "item-gun-fire") {
-        this.shootBullet(tomatoData, Game.TEAM_A);
+        const bullet = this.shootBullet(tomatoData, Game.TEAM_A);
+
+        bullet.setIsPlayerOwned(true);
       }
 
       //set movement
@@ -227,7 +237,7 @@ export class Game extends Scene {
     this.camera.centerOn(playerX, playerY);
   }
 
-  public shootBullet(unit: Unit, teamNumber: number) {
+  public shootBullet(unit: Unit, teamNumber: number): Bullet {
     const unitContainer = unit.getUnitContainer();
 
     const bulletSprite = this.physics.add.sprite(
@@ -236,7 +246,8 @@ export class Game extends Scene {
       "item-bullet"
     );
 
-    bulletSprite.setData("data", new Bullet());
+    const bulletData = new Bullet();
+    bulletSprite.setData("data", bulletData);
 
     //note: when adding to group, velocity will be set to 0.
     if (teamNumber == Game.TEAM_A) {
@@ -250,6 +261,8 @@ export class Game extends Scene {
       Bullet.BULLET_SPEED,
       bulletSprite.body.velocity
     );
+
+    return bulletData;
   }
 
   private updateBullets(delta: number) {
@@ -339,6 +352,13 @@ export class Game extends Scene {
     const physicsSprite =
       enemySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
     const unit = physicsSprite.getData("data");
+    const bullet: Bullet = (bulletSprite as Phaser.GameObjects.Sprite).getData(
+      "data"
+    );
+
+    if (bullet.getIsPlayerOwned()) {
+      this.audioHitmaker.play();
+    }
 
     this.enemyArmy.removeUnit(unit);
     bulletSprite.destroy();
