@@ -332,11 +332,20 @@ export class Game extends Scene {
     bulletSprite.destroy();
     const physicsSprite =
       friendlySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
-    const unit = physicsSprite.getData("data");
+    const unit: Unit = physicsSprite.getData("data");
 
     this.friendlyArmy.removeUnit(unit);
     this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
 
+    const unitContainer = unit.getUnitContainer();
+    const deadBodySprite = this.add.sprite(
+      unitContainer.x,
+      unitContainer.y,
+      "unit-tomato-dead"
+    );
+
+    deadBodySprite.setAngle(unitContainer.angle);
+    deadBodySprite.setDepth(-1);
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
   }
@@ -351,7 +360,7 @@ export class Game extends Scene {
   ): void {
     const physicsSprite =
       enemySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
-    const unit = physicsSprite.getData("data");
+    const unit: Unit = physicsSprite.getData("data");
     const bullet: Bullet = (bulletSprite as Phaser.GameObjects.Sprite).getData(
       "data"
     );
@@ -364,6 +373,16 @@ export class Game extends Scene {
     bulletSprite.destroy();
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
+
+    const unitContainer = unit.getUnitContainer();
+    const deadBodySprite = this.add.sprite(
+      unitContainer.x,
+      unitContainer.y,
+      "unit-tomato-dead"
+    );
+
+    deadBodySprite.setAngle(unitContainer.angle);
+    deadBodySprite.setDepth(-1);
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
