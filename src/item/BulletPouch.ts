@@ -1,4 +1,5 @@
 import { Item } from "./Item";
+import { ItemEvent } from "./ItemEvent";
 
 /**
  * Pouch of bullets.

@@ -1,4 +1,5 @@
 import { Item } from "../item/Item";
+import { ItemEvent } from "../item/ItemEvent";
 import { Unit } from "./Unit";
 
 /**

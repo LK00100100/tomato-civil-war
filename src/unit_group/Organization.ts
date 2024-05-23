@@ -1,5 +1,6 @@
 import { Coordinate } from "../Coordinate";
 import { Position } from "../Position";
+import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
 
@@ -904,7 +905,7 @@ export abstract class Organization {
 
       const event = unit.doAction();
 
-      if (event.name == "item-gun-fire") {
+      if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         this.game.shootBullet(unit, this.teamNumber, event as GunFireEvent);
       }
 

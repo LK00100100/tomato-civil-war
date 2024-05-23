@@ -1,4 +1,4 @@
-interface ItemEvent {
+export interface ItemEvent {
   /**
    * Name of event. Should be unique
    */

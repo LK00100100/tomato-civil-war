@@ -1,30 +1,21 @@
 import { Utils } from "../Utils";
+import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Item } from "./Item";
+import { ItemEvent } from "./ItemEvent";
 
-//TODO: rename to SmoothboreGun
 /**
- * Basic gun.
- * Requires the user to have a bullet pouch.
+ * Base class of a Gun held by a Unit.
+ * Shoots bullets and deals damage.
  */
-export class Gun implements Item {
-  isLoaded: boolean;
+export abstract class Gun implements Item {
+  protected isLoaded: boolean;
 
-  isReloading: boolean;
+  protected isReloading: boolean;
 
-  duration: number; //current reload duration
+  protected duration: number; //current reload duration
 
-  private static readonly DAMAGE_BASE = 40;
-  private static readonly DAMAGE_RAND_MAX = 65;
+  //TODO: need to load bullets from bullet pouch
 
-  /**
-   * +/- shooting angle.
-   * In Phaser angle.
-   */
-  private static readonly MAX_ANGLE: number = 10;
-
-  static readonly MAX_RELOAD_DURATION = 4000;
-
-  //TODO: need to load bullets
   constructor() {
     this.isLoaded = true;
     this.isReloading = false;
@@ -32,25 +23,48 @@ export class Gun implements Item {
     this.duration = 0;
   }
 
-  update(delta: number) {
+  protected abstract getBaseDamage(): number;
+
+  protected abstract getItemName(): string;
+
+  protected abstract getMaxAngle(): number;
+
+  protected abstract getMaxRandomDamage(): number;
+
+  protected abstract getMaxReloadDuration(): number;
+
+  public update(delta: number) {
     if (this.isLoaded) return;
 
     this.duration += delta;
 
-    if (this.duration >= Gun.MAX_RELOAD_DURATION) {
+    if (this.duration >= this.getMaxReloadDuration()) {
       this.duration = 0;
       this.isReloading = false;
       this.isLoaded = true;
     }
   }
 
-  useItem(): ItemEvent {
+  protected calcFireAngle(): number {
+    const isNegative = Utils.rollDiceExclusive(2) == 0 ? -1 : 1;
+
+    return Utils.rollRandomExclusive(this.getMaxAngle()) * isNegative;
+  }
+
+  protected calcDamage(): number {
+    const additionalDamage =
+      Utils.rollDiceExclusive(this.getMaxRandomDamage()) + 1;
+
+    return this.getBaseDamage() + additionalDamage;
+  }
+
+  public useItem(): ItemEvent {
     //ready to fire
     if (this.isLoaded) {
       this.isLoaded = false;
 
       return {
-        name: "item-gun-fire",
+        name: this.getItemName() + "-fire",
         fireAngle: this.calcFireAngle(),
         damage: this.calcDamage(),
       } as GunFireEvent;
@@ -59,21 +73,9 @@ export class Gun implements Item {
     if (!this.isReloading) {
       this.isReloading = true;
 
-      return { name: "item-gun-reload-start" };
+      return { name: this.getItemName() + "-reload-start" };
     }
 
-    return { name: "item-gun-reloading" };
-  }
-
-  private calcFireAngle(): number {
-    const isNegative = Utils.rollDiceExclusive(2) == 0 ? -1 : 1;
-
-    return Utils.rollRandomExclusive(Gun.MAX_ANGLE) * isNegative;
-  }
-
-  private calcDamage(): number {
-    const additionalDamage = Utils.rollDiceExclusive(Gun.DAMAGE_RAND_MAX) + 1;
-
-    return Gun.DAMAGE_BASE + additionalDamage;
+    return { name: this.getItemName() + "-reloading" };
   }
 }

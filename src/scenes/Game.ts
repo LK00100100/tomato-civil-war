@@ -6,6 +6,7 @@ import { UnitFactory } from "../unit/UnitFactory";
 import { Army } from "../unit_group/Army";
 import { Unit } from "../unit/Unit";
 import { Smoke } from "../entity/Smoke";
+import { GunFireEvent } from "../item_event/GunFireEvent";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -222,7 +223,7 @@ export class Game extends Scene {
       //player shoots
       const tomatoData: Tomato = this.tomato.getData("data");
       const event = tomatoData.doAction();
-      if (event.name == "item-gun-fire") {
+      if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         const bullet = this.shootBullet(
           tomatoData,
           Game.TEAM_A,
