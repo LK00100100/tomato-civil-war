@@ -21,6 +21,10 @@ export abstract class Unit {
     this.isPlayerOwned = false;
   }
 
+  decrementHp(hp: number) {
+    this.hp -= hp;
+  }
+
   getSpeed() {
     return this.speed;
   }
@@ -54,7 +58,7 @@ export abstract class Unit {
    * TODO: maybe return enum?
    * Do something such as fire a gun, then returns an event.
    */
-  abstract doAction(): string;
+  abstract doAction(): ItemEvent;
 
   /**
    * Update the internal clock of the unit. For calculations.
@@ -75,4 +79,8 @@ export abstract class Unit {
    * @returns true if item was removed. False, otherwise.
    */
   abstract removeItem(item: Item): boolean;
+
+  public isDead(): boolean {
+    return this.hp <= 0;
+  }
 }

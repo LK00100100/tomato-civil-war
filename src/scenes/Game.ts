@@ -5,6 +5,7 @@ import { Company } from "../unit_group/Company";
 import { UnitFactory } from "../unit/UnitFactory";
 import { Army } from "../unit_group/Army";
 import { Unit } from "../unit/Unit";
+import { Smoke } from "../entity/Smoke";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -17,6 +18,7 @@ export class Game extends Scene {
 
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
+  public smokeEntities: Set<Phaser.GameObjects.Sprite>;
 
   //TODO: static enums
   public static readonly TEAM_A = 1;
@@ -60,8 +62,12 @@ export class Game extends Scene {
     this.background.setScale(50);
     this.background.setAlpha(0.1);
 
+    /**
+     * entities
+     */
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
+    this.smokeEntities = new Set();
 
     this.audioHitmaker = this.sound.add("hitmarker-player");
 
@@ -115,7 +121,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 5;
+    const numCompanies = 6;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -161,6 +167,8 @@ export class Game extends Scene {
    */
   update(_: any, delta: any) {
     //note: if people die first, then remove and stop processing them.
+
+    this.updateSmoke(delta);
     this.updateBullets(delta);
     this.checkCollisions();
 
@@ -214,8 +222,12 @@ export class Game extends Scene {
       //player shoots
       const tomatoData: Tomato = this.tomato.getData("data");
       const event = tomatoData.doAction();
-      if (event == "item-gun-fire") {
-        const bullet = this.shootBullet(tomatoData, Game.TEAM_A);
+      if (event.name == "item-gun-fire") {
+        const bullet = this.shootBullet(
+          tomatoData,
+          Game.TEAM_A,
+          event as GunFireEvent
+        );
 
         bullet.setIsPlayerOwned(true);
       }
@@ -237,16 +249,36 @@ export class Game extends Scene {
     this.camera.centerOn(playerX, playerY);
   }
 
-  public shootBullet(unit: Unit, teamNumber: number): Bullet {
+  private updateSmoke(delta: number): void {
+    for (let smoke of this.smokeEntities) {
+      let smokeData: Smoke = smoke.getData("data");
+
+      smokeData.update(delta);
+
+      if (smokeData.isExpired()) {
+        this.smokeEntities.delete(smoke);
+        smoke.destroy(); //TODO: use pool
+      }
+
+      smoke.setAlpha(smokeData.getOpacity());
+    }
+  }
+
+  public shootBullet(
+    unit: Unit,
+    teamNumber: number,
+    gunFireEvent: GunFireEvent
+  ): Bullet {
     const unitContainer = unit.getUnitContainer();
+    //const weaponSprite: Phaser.GameObjects.Sprite = unitContainer.getByName("weapon");
 
     const bulletSprite = this.physics.add.sprite(
       unitContainer.x,
       unitContainer.y,
-      "item-bullet"
+      "entity-bullet"
     );
 
-    const bulletData = new Bullet();
+    const bulletData = new Bullet(gunFireEvent.damage);
     bulletSprite.setData("data", bulletData);
 
     //note: when adding to group, velocity will be set to 0.
@@ -256,11 +288,28 @@ export class Game extends Scene {
       this.enemyBullets.add(bulletSprite);
     }
 
-    this.physics.velocityFromRotation(
-      unitContainer.rotation,
+    //note: velocity allows for collision detection. setX doesn't work like that.
+    const randomRotation = gunFireEvent.fireAngle;
+    this.physics.velocityFromAngle(
+      unitContainer.angle + randomRotation,
       Bullet.BULLET_SPEED,
       bulletSprite.body.velocity
     );
+
+    //TODO: smoke pool
+    //make smoke
+    const smokeData = new Smoke();
+
+    const smoke = this.add.sprite(
+      unitContainer.x,
+      unitContainer.y,
+      "entity-smoke"
+    );
+    smoke.setScale(3);
+    smoke.setData("data", smokeData);
+    smoke.setAngle(unitContainer.angle);
+
+    this.smokeEntities.add(smoke);
 
     return bulletData;
   }
@@ -320,6 +369,7 @@ export class Game extends Scene {
     // );
   }
 
+  //TODO: try to make this func more generic and merge the two functions
   //no tiles
   private collideFriendlyWithEnemyBullets(
     friendlySprite:
@@ -329,23 +379,33 @@ export class Game extends Scene {
       | Phaser.Types.Physics.Arcade.GameObjectWithBody
       | Phaser.Tilemaps.Tile
   ): void {
-    bulletSprite.destroy();
+    const bulletData: Bullet = (
+      bulletSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
     const physicsSprite =
       friendlySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
     const unit: Unit = physicsSprite.getData("data");
 
-    this.friendlyArmy.removeUnit(unit);
+    unit.decrementHp(bulletData.getDamage());
+
+    if (unit.isDead()) {
+      this.friendlyArmy.removeUnit(unit);
+
+      const unitContainer = unit.getUnitContainer();
+      const deadBodySprite = this.add.sprite(
+        unitContainer.x,
+        unitContainer.y,
+        "unit-tomato-dead"
+      );
+
+      deadBodySprite.setAngle(unitContainer.angle);
+      deadBodySprite.setDepth(-1);
+    }
+
     this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
+    bulletSprite.destroy();
 
-    const unitContainer = unit.getUnitContainer();
-    const deadBodySprite = this.add.sprite(
-      unitContainer.x,
-      unitContainer.y,
-      "unit-tomato-dead"
-    );
-
-    deadBodySprite.setAngle(unitContainer.angle);
-    deadBodySprite.setDepth(-1);
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
   }
@@ -358,6 +418,10 @@ export class Game extends Scene {
       | Phaser.Types.Physics.Arcade.GameObjectWithBody
       | Phaser.Tilemaps.Tile
   ): void {
+    const bulletData: Bullet = (
+      bulletSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
     const physicsSprite =
       enemySprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
     const unit: Unit = physicsSprite.getData("data");
@@ -369,20 +433,24 @@ export class Game extends Scene {
       this.audioHitmaker.play();
     }
 
-    this.enemyArmy.removeUnit(unit);
-    bulletSprite.destroy();
+    unit.decrementHp(bulletData.getDamage());
+
+    if (unit.isDead()) {
+      this.enemyArmy.removeUnit(unit);
+
+      const unitContainer = unit.getUnitContainer();
+      const deadBodySprite = this.add.sprite(
+        unitContainer.x,
+        unitContainer.y,
+        "unit-tomato-dead"
+      );
+
+      deadBodySprite.setAngle(unitContainer.angle);
+      deadBodySprite.setDepth(-1);
+    }
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
-
-    const unitContainer = unit.getUnitContainer();
-    const deadBodySprite = this.add.sprite(
-      unitContainer.x,
-      unitContainer.y,
-      "unit-tomato-dead"
-    );
-
-    deadBodySprite.setAngle(unitContainer.angle);
-    deadBodySprite.setDepth(-1);
+    bulletSprite.destroy();
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies

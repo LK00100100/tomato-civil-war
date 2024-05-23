@@ -4,5 +4,5 @@
 export interface Item {
   update: (delta: number) => void;
 
-  useItem: () => string;
+  useItem: () => ItemEvent;
 }

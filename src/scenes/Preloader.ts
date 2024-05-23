@@ -31,7 +31,12 @@ export class Preloader extends Scene {
     this.load.image("unit-tomato", "tomato.png");
     this.load.image("unit-tomato-dead", "tomato-dead.png");
     this.load.image("item-gun", "gun.png");
-    this.load.image("item-bullet", "bullet.png");
+
+    /**
+     * entities
+     */
+    this.load.image("entity-bullet", "bullet.png");
+    this.load.image("entity-smoke", "smoke.png");
 
     this.load.audio("hitmarker-player", "audio/hitmarker_2.mp3");
   }

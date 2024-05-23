@@ -8,12 +8,15 @@ export class Bullet {
    * Is owned by player 1.
    */
   private isPlayerOwned: boolean;
+  private damage: number;
 
   private static readonly MAX_DURATION = 4000;
   public static readonly BULLET_SPEED = 3000;
 
-  constructor() {
+  constructor(damage: number) {
     this.duration = 0;
+
+    this.damage = damage;
 
     this.isPlayerOwned = false;
   }
@@ -32,6 +35,10 @@ export class Bullet {
 
   public setIsPlayerOwned(newPlayerOwned: boolean) {
     this.isPlayerOwned = newPlayerOwned;
+  }
+
+  public getDamage(): number {
+    return this.damage;
   }
 
   /**

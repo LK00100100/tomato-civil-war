@@ -904,8 +904,8 @@ export abstract class Organization {
 
       const event = unit.doAction();
 
-      if (event == "item-gun-fire") {
-        this.game.shootBullet(unit, this.teamNumber);
+      if (event.name == "item-gun-fire") {
+        this.game.shootBullet(unit, this.teamNumber, event as GunFireEvent);
       }
 
       //TODO: handle event better. event handler?

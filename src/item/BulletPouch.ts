@@ -12,7 +12,7 @@ export class BulletPouch implements Item {
 
   update(_delta: number) {}
 
-  useItem(): string {
-    return "item-bullet-pouch-used";
+  useItem(): ItemEvent {
+    return { name: "item-bullet-pouch-used" };
   }
 }

@@ -28,7 +28,7 @@ export class Tomato extends Unit {
     throw new Error("Method not implemented.");
   }
 
-  public override doAction(): string {
+  public override doAction(): ItemEvent {
     const action = this.items[this.selectedItem].useItem();
 
     return action;
