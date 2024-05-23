@@ -11,7 +11,7 @@ export class Bullet {
   private damage: number;
 
   private static readonly MAX_DURATION = 4000;
-  public static readonly BULLET_SPEED = 3000;
+  public static readonly BULLET_SPEED = 4000;
 
   constructor(damage: number) {
     this.duration = 0;

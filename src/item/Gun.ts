@@ -27,10 +27,21 @@ export abstract class Gun implements Item {
 
   protected abstract getItemName(): string;
 
+  /**
+   * Angle of bullet fired out of gun. 0 = straight.
+   * -x is a little left.
+   * +x is a little right.
+   */
   protected abstract getMaxAngle(): number;
 
+  /**
+   * Added to base damage.
+   */
   protected abstract getMaxRandomDamage(): number;
 
+  /**
+   * Time to reload in milliseconds.
+   */
   protected abstract getMaxReloadDuration(): number;
 
   public update(delta: number) {

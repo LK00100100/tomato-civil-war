@@ -17,7 +17,7 @@ export class SmoothboreGun extends Gun {
    * +/- shooting angle.
    * In Phaser angle.
    */
-  private static readonly MAX_ANGLE = 10;
+  private static readonly MAX_RAND_ANGLE = 10;
 
   private static readonly MAX_RELOAD_DURATION = 10000;
 
@@ -30,7 +30,7 @@ export class SmoothboreGun extends Gun {
   }
 
   protected override getMaxAngle(): number {
-    return SmoothboreGun.MAX_ANGLE;
+    return SmoothboreGun.MAX_RAND_ANGLE;
   }
 
   protected override getMaxRandomDamage(): number {

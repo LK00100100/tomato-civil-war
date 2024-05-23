@@ -7,13 +7,15 @@ import { Army } from "../unit_group/Army";
 import { Unit } from "../unit/Unit";
 import { Smoke } from "../entity/Smoke";
 import { GunFireEvent } from "../item_event/GunFireEvent";
+import { WeaponFactory } from "../item/WeaponFactory";
+import { Rifle } from "../item/Rifle";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
   background: Phaser.GameObjects.Image;
   msg_text: Phaser.GameObjects.Text;
 
-  private tomato: Phaser.GameObjects.Container;
+  private tomatoPlayer: Phaser.GameObjects.Container;
 
   public readonly MOVE_SPEED = 25;
 
@@ -92,8 +94,14 @@ export class Game extends Scene {
     this.friendlyArmy = new Army(this, Game.TEAM_A);
     this.enemyArmy = new Army(this, Game.TEAM_B);
 
-    this.tomato = UnitFactory.createTomato(this);
-    const tomatoData: Unit = this.tomato.getData("data") as Unit;
+    /**
+     * Make player tomato
+     */
+    this.tomatoPlayer = UnitFactory.createTomato(
+      this,
+      WeaponFactory.makeRifleSpriteWithData(this)
+    );
+    const tomatoData: Unit = this.tomatoPlayer.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
 
     const yourCompany = new Company(this, "A-company-player");
@@ -107,8 +115,8 @@ export class Game extends Scene {
     this.makeFriends(100);
 
     //move player to center
-    this.tomato.x += 15200;
-    this.tomato.y += 1000;
+    this.tomatoPlayer.x += 15200;
+    this.tomatoPlayer.y += 1000;
   }
 
   private initKeyboard() {
@@ -194,19 +202,19 @@ export class Game extends Scene {
       // ) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
 
       // body.setVelocityY(-this.MOVE_SPEED);
-      this.tomato.setY(this.tomato.y - this.MOVE_SPEED);
+      this.tomatoPlayer.setY(this.tomatoPlayer.y - this.MOVE_SPEED);
     }
 
     if (this.keyS.isDown) {
-      this.tomato.setY(this.tomato.y + this.MOVE_SPEED);
+      this.tomatoPlayer.setY(this.tomatoPlayer.y + this.MOVE_SPEED);
     }
 
     if (this.keyA.isDown) {
-      this.tomato.setX(this.tomato.x - this.MOVE_SPEED);
+      this.tomatoPlayer.setX(this.tomatoPlayer.x - this.MOVE_SPEED);
     }
 
     if (this.keyD.isDown) {
-      this.tomato.setX(this.tomato.x + this.MOVE_SPEED);
+      this.tomatoPlayer.setX(this.tomatoPlayer.x + this.MOVE_SPEED);
     }
 
     if (this.keyZ.isDown) {
@@ -221,7 +229,7 @@ export class Game extends Scene {
       //this.scene.start('GameOver');
 
       //player shoots
-      const tomatoData: Tomato = this.tomato.getData("data");
+      const tomatoData: Tomato = this.tomatoPlayer.getData("data");
       const event = tomatoData.doAction();
       if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         const bullet = this.shootBullet(
@@ -238,14 +246,14 @@ export class Game extends Scene {
 
     //set player's tomato facing
     this.input.mousePointer.updateWorldPoint(this.camera);
-    const playerX = this.tomato.x;
-    const playerY = this.tomato.y;
+    const playerX = this.tomatoPlayer.x;
+    const playerY = this.tomatoPlayer.y;
     const mouseX = this.input.mousePointer.worldX;
     const mouseY = this.input.mousePointer.worldY;
     const angle =
       Phaser.Math.RAD_TO_DEG *
       Phaser.Math.Angle.Between(playerX, playerY, mouseX, mouseY);
-    this.tomato.setAngle(angle);
+    this.tomatoPlayer.setAngle(angle);
 
     this.camera.centerOn(playerX, playerY);
   }

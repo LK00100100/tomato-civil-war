@@ -22,15 +22,19 @@ export abstract class Unit {
     this.isPlayerOwned = false;
   }
 
-  decrementHp(hp: number) {
+  public setSelectedItem(selectedIdx: number) {
+    this.selectedItem = selectedIdx;
+  }
+
+  public decrementHp(hp: number) {
     this.hp -= hp;
   }
 
-  getSpeed() {
+  public getSpeed() {
     return this.speed;
   }
 
-  getUnitContainer(): Phaser.GameObjects.Container {
+  public getUnitContainer(): Phaser.GameObjects.Container {
     return this.unitContainer;
   }
 
