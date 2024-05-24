@@ -10,7 +10,7 @@ import { Gun } from "./Gun";
 export class Rifle extends Gun {
   private static readonly DAMAGE_BASE = 100;
 
-  protected static readonly ITEM_NAME = "item-gun-rifle";
+  private static readonly ITEM_NAME = "item-gun-rifle";
 
   /**
    * +/- shooting angle.

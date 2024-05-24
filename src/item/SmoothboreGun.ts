@@ -11,7 +11,7 @@ export class SmoothboreGun extends Gun {
   private static readonly DAMAGE_BASE = 40;
   private static readonly DAMAGE_RAND_MAX = 65;
 
-  protected static readonly ITEM_NAME = "item-gun-smoothbore";
+  private static readonly ITEM_NAME = "item-gun-smoothbore";
 
   /**
    * +/- shooting angle.

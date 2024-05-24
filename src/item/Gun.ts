@@ -16,11 +16,17 @@ export abstract class Gun implements Item {
 
   //TODO: need to load bullets from bullet pouch
 
+  private doneReloadingCallback: () => void;
+
   constructor() {
     this.isLoaded = true;
     this.isReloading = false;
 
     this.duration = 0;
+  }
+
+  public getIsLoaded() {
+    return this.isLoaded;
   }
 
   protected abstract getBaseDamage(): number;
@@ -49,11 +55,20 @@ export abstract class Gun implements Item {
 
     this.duration += delta;
 
+    //done reloading
     if (this.duration >= this.getMaxReloadDuration()) {
       this.duration = 0;
       this.isReloading = false;
       this.isLoaded = true;
+
+      if (this.doneReloadingCallback != null) {
+        this.doneReloadingCallback();
+      }
     }
+  }
+
+  public setDoneReloadingCallback(callbackFunc: () => void) {
+    this.doneReloadingCallback = callbackFunc;
   }
 
   protected calcFireAngle(): number {

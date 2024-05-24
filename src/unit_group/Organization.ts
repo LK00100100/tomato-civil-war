@@ -1,5 +1,6 @@
 import { Coordinate } from "../Coordinate";
 import { Position } from "../Position";
+import { Gun } from "../item/Gun";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
@@ -902,6 +903,11 @@ export abstract class Organization {
 
       //TODO: do tweening
       unitContainer.setAngle(this.orgFaceAngle);
+
+      //add random shooting delay for aesthetic purposes.
+      if (!unit.isOverRandomOffset()) {
+        return;
+      }
 
       const event = unit.doAction();
 
