@@ -1,5 +1,4 @@
 import { BulletPouch } from "../item/BulletPouch";
-import { Gun } from "../item/Gun";
 import { WeaponFactory } from "../item/WeaponFactory";
 import { Game } from "../scenes/Game";
 import { Tomato } from "./Tomato";

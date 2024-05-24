@@ -8,7 +8,7 @@ import { Unit } from "../unit/Unit";
 import { Smoke } from "../entity/Smoke";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { WeaponFactory } from "../item/WeaponFactory";
-import { Rifle } from "../item/Rifle";
+import { AudioPool } from "../pool/AudioPool";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -46,7 +46,14 @@ export class Game extends Scene {
    * audios
    */
 
-  private audioHitmaker: Phaser.Sound.BaseSound;
+  private audioHitmarker: Phaser.Sound.BaseSound;
+  private musketFireAudioPool: AudioPool;
+
+  /**
+   * Pixel distance. At this distance from the player is 0% volume.
+   * On player is 100%.
+   */
+  private static readonly VOLUME_DISTANCE = 7500;
 
   constructor() {
     super("Game");
@@ -72,7 +79,8 @@ export class Game extends Scene {
     this.enemyBullets = this.physics.add.group();
     this.smokeEntities = new Set();
 
-    this.audioHitmaker = this.sound.add("hitmarker-player");
+    this.audioHitmarker = this.sound.add("hitmarker-player");
+    this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 100);
 
     this.msg_text = this.add.text(
       400,
@@ -218,10 +226,10 @@ export class Game extends Scene {
     }
 
     if (this.keyZ.isDown) {
-      this.cameras.main.zoom -= 0.002;
+      this.cameras.main.zoom += 0.002;
     }
     if (this.keyX.isDown) {
-      this.cameras.main.zoom += 0.002;
+      this.cameras.main.zoom -= 0.002;
     }
 
     //player's left click
@@ -319,6 +327,19 @@ export class Game extends Scene {
     smoke.setAngle(unitContainer.angle);
 
     this.smokeEntities.add(smoke);
+
+    // make loud noises
+    const distance = Phaser.Math.Distance.Between(
+      unitContainer.x,
+      unitContainer.y,
+      this.tomatoPlayer.x,
+      this.tomatoPlayer.y
+    );
+
+    const volume =
+      Math.max(0, Game.VOLUME_DISTANCE - distance) / Game.VOLUME_DISTANCE;
+
+    this.musketFireAudioPool.play(volume);
 
     return bulletData;
   }
@@ -439,7 +460,7 @@ export class Game extends Scene {
     );
 
     if (bullet.getIsPlayerOwned()) {
-      this.audioHitmaker.play();
+      this.audioHitmarker.play();
     }
 
     unit.decrementHp(bulletData.getDamage());

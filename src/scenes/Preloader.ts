@@ -39,7 +39,12 @@ export class Preloader extends Scene {
     this.load.image("entity-bullet", "bullet.png");
     this.load.image("entity-smoke", "smoke.png");
 
+    /**
+     * audio
+     */
     this.load.audio("hitmarker-player", "audio/hitmarker_2.mp3");
+    this.load.audio("audio-musket-fire", "audio/musket_explosion.mp3");
+    this.load.audio("audio-cannon-fire", "audio/cannon_explosion.mp3");
   }
 
   create() {
