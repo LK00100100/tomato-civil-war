@@ -10,6 +10,7 @@ import { GunFireEvent } from "../item_event/GunFireEvent";
 import { WeaponFactory } from "../item/WeaponFactory";
 import { AudioPool } from "../pool/AudioPool";
 import { Gun } from "../item/Gun";
+import { Utils } from "../Utils";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -46,10 +47,22 @@ export class Game extends Scene {
   /**
    * audios
    */
-
   private audioHitmarker: Phaser.Sound.BaseSound;
   private audioGunClick: Phaser.Sound.BaseSound;
   private musketFireAudioPool: AudioPool;
+
+  /**
+   * environmental
+   */
+  /**
+   * in phaser angle
+   */
+  private windDirection: number;
+  /**
+   * in pixels
+   */
+  private windMagnitudeX: number;
+  private windMagnitudeY: number;
 
   /**
    * Pixel distance. At this distance from the player is 0% volume.
@@ -84,6 +97,10 @@ export class Game extends Scene {
     this.audioHitmarker = this.sound.add("audio-hitmarker-player");
     this.audioGunClick = this.sound.add("audio-gun-click");
     this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 100);
+
+    this.windMagnitudeX = Utils.rollRandomExclusiveNegative(5);
+    this.windMagnitudeY = Utils.rollRandomExclusiveNegative(5);
+    this.windDirection = Utils.rollRandomExclusiveNegative(180);
 
     this.msg_text = this.add.text(
       400,
@@ -276,7 +293,6 @@ export class Game extends Scene {
   private updateSmoke(delta: number): void {
     for (let smoke of this.smokeEntities) {
       let smokeData: Smoke = smoke.getData("data");
-
       smokeData.update(delta);
 
       if (smokeData.isExpired()) {
@@ -284,6 +300,9 @@ export class Game extends Scene {
         smoke.destroy(); //TODO: use pool
       }
 
+      //update apperance
+      smoke.x += this.windMagnitudeX;
+      smoke.y += this.windMagnitudeY;
       smoke.setAlpha(smokeData.getOpacity());
     }
   }

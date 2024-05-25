@@ -19,4 +19,15 @@ export class Utils {
   public static rollRandomExclusive(max: number) {
     return Math.random() * max;
   }
+
+  /**
+   * Get decimal number from 0 to max (exclusive).
+   * 50% chance of being negative
+   * @param max exclusive max
+   * @returns
+   */
+  public static rollRandomExclusiveNegative(max: number) {
+    let x = Math.random() * max;
+    return this.rollDiceExclusive(2) == 0 ? x * -1 : x;
+  }
 }
