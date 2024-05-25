@@ -1,5 +1,4 @@
 import { Utils } from "../Utils";
-import { Gun } from "../item/Gun";
 import { Item } from "../item/Item";
 import { ItemEvent } from "../item/ItemEvent";
 
@@ -121,11 +120,7 @@ export abstract class Unit {
     if (this.items.length == this.getItemLimit()) return false;
 
     //add random shooting delay for guns per units (for aesthetics)
-    if (item instanceof Gun) {
-      (item as Gun).setDoneReloadingCallback(() =>
-        this.resetRandomOffsetDelta()
-      );
-    }
+    item.setCooldownOverCallback(() => this.resetRandomOffsetDelta());
 
     this.items.push(item);
     return true;

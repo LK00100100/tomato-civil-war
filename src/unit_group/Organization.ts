@@ -1,6 +1,5 @@
 import { Coordinate } from "../Coordinate";
 import { Position } from "../Position";
-import { Gun } from "../item/Gun";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";

@@ -9,6 +9,7 @@ import { Smoke } from "../entity/Smoke";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { WeaponFactory } from "../item/WeaponFactory";
 import { AudioPool } from "../pool/AudioPool";
+import { Gun } from "../item/Gun";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -47,6 +48,7 @@ export class Game extends Scene {
    */
 
   private audioHitmarker: Phaser.Sound.BaseSound;
+  private audioGunClick: Phaser.Sound.BaseSound;
   private musketFireAudioPool: AudioPool;
 
   /**
@@ -79,7 +81,8 @@ export class Game extends Scene {
     this.enemyBullets = this.physics.add.group();
     this.smokeEntities = new Set();
 
-    this.audioHitmarker = this.sound.add("hitmarker-player");
+    this.audioHitmarker = this.sound.add("audio-hitmarker-player");
+    this.audioGunClick = this.sound.add("audio-gun-click");
     this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 100);
 
     this.msg_text = this.add.text(
@@ -111,6 +114,10 @@ export class Game extends Scene {
     );
     const tomatoData: Unit = this.tomatoPlayer.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
+    const mySelectedItem = tomatoData.getSelectedItem();
+    if (mySelectedItem instanceof Gun) {
+      mySelectedItem.setCooldownOverCallback(() => this.audioGunClick.play());
+    }
 
     const yourCompany = new Company(this, "A-company-player");
     yourCompany.addUnit(tomatoData);

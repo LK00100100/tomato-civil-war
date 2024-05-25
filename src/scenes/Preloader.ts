@@ -42,9 +42,10 @@ export class Preloader extends Scene {
     /**
      * audio
      */
-    this.load.audio("hitmarker-player", "audio/hitmarker_2.mp3");
+    this.load.audio("audio-hitmarker-player", "audio/hitmarker_2.mp3");
     this.load.audio("audio-musket-fire", "audio/musket_explosion.mp3");
     this.load.audio("audio-cannon-fire", "audio/cannon_explosion.mp3");
+    this.load.audio("audio-gun-click", "audio/gun_click.mp3");
   }
 
   create() {

@@ -3,8 +3,17 @@ import { ItemEvent } from "./ItemEvent";
 /**
  * Carryable by Units
  */
-export interface Item {
-  update: (delta: number) => void;
+export abstract class Item {
+  /**
+   * Items generally have a cooldown after use.
+   */
+  protected cooldownOverCallback: () => void;
 
-  useItem: () => ItemEvent;
+  public setCooldownOverCallback(callback: () => void) {
+    this.cooldownOverCallback = callback;
+  }
+
+  public abstract update(delta: number): void;
+
+  public abstract useItem(): ItemEvent;
 }

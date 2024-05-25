@@ -7,7 +7,7 @@ import { ItemEvent } from "./ItemEvent";
  * Base class of a Gun held by a Unit.
  * Shoots bullets and deals damage.
  */
-export abstract class Gun implements Item {
+export abstract class Gun extends Item {
   protected isLoaded: boolean;
 
   protected isReloading: boolean;
@@ -16,9 +16,8 @@ export abstract class Gun implements Item {
 
   //TODO: need to load bullets from bullet pouch
 
-  private doneReloadingCallback: () => void;
-
   constructor() {
+    super();
     this.isLoaded = true;
     this.isReloading = false;
 
@@ -50,7 +49,7 @@ export abstract class Gun implements Item {
    */
   protected abstract getMaxReloadDuration(): number;
 
-  public update(delta: number) {
+  public override update(delta: number) {
     if (this.isLoaded) return;
 
     this.duration += delta;
@@ -61,14 +60,10 @@ export abstract class Gun implements Item {
       this.isReloading = false;
       this.isLoaded = true;
 
-      if (this.doneReloadingCallback != null) {
-        this.doneReloadingCallback();
+      if (this.cooldownOverCallback != null) {
+        this.cooldownOverCallback();
       }
     }
-  }
-
-  public setDoneReloadingCallback(callbackFunc: () => void) {
-    this.doneReloadingCallback = callbackFunc;
   }
 
   protected calcFireAngle(): number {

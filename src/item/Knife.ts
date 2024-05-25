@@ -4,8 +4,7 @@ import { ItemEvent } from "./ItemEvent";
 /**
  * Knife
  */
-export class Knife implements Item {
-  constructor() {}
+export class Knife extends Item {
   update(_delta: number) {}
 
   useItem(): ItemEvent {

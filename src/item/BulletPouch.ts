@@ -4,10 +4,11 @@ import { ItemEvent } from "./ItemEvent";
 /**
  * Pouch of bullets.
  */
-export class BulletPouch implements Item {
+export class BulletPouch extends Item {
   quantity: number;
 
   constructor() {
+    super();
     this.quantity = 20;
   }
 
