@@ -12,6 +12,7 @@ import { AudioPool } from "../pool/AudioPool";
 import { Gun } from "../item/Gun";
 import { Utils } from "../util/Utils";
 import { Stats } from "../util/Stats";
+import { Settings } from "../util/Settings";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -72,6 +73,8 @@ export class Game extends Scene {
   }
 
   create() {
+    Settings.setIsDebugMode(true);
+
     /**
      * camera junk
      */

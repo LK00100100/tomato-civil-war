@@ -3,6 +3,7 @@ import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
 import { Coordinate } from "../util/Coordinate";
 import { Position } from "../util/Position";
+import { Settings } from "../util/Settings";
 
 /**
  * Military Organization unit.
@@ -351,8 +352,9 @@ export abstract class Organization {
     totalX += toFrontXMagnitude * numVerticalStepsToCenter;
     totalY += toFrontYMagnitude * numVerticalStepsToCenter;
 
-    //TODO:
-    this.game.add.rectangle(totalX, totalY, 100, 100, 0xffa500); //orange rectangle
+    if (Settings.getIsDebugMode()) {
+      this.game.add.rectangle(totalX, totalY, 100, 100, 0xffa500); //orange rectangle
+    }
 
     return {
       x: totalX,
@@ -545,13 +547,17 @@ export abstract class Organization {
    * @param facingAngle Phaser angle to face
    */
   private calculateFormUpToMove(orgCoord: Coordinate, facingAngle: number) {
-    console.log(`${this.name} : calculateFormUpToMove()`);
+    if (Settings.getIsDebugMode()) {
+      console.log(`${this.name} : calculateFormUpToMove()`);
+    }
+
     //get to top-left-corner of the formation
     //relative to the organization's direction
 
-    //TODO: set isDebug mode
-    this.game.add.rectangle(orgCoord.x, orgCoord.y, 100, 100, 0x00008b); //dark blue
-    console.log(`${this.name} form up at ${orgCoord.x}, ${orgCoord.y}`);
+    if (Settings.getIsDebugMode()) {
+      this.game.add.rectangle(orgCoord.x, orgCoord.y, 100, 100, 0x00008b); //dark blue
+      console.log(`${this.name} form up at ${orgCoord.x}, ${orgCoord.y}`);
+    }
 
     //prettier-ignore
     let halfWidth = Math.floor(this.unitRows[0].length)  - 0.5;
@@ -584,8 +590,9 @@ export abstract class Organization {
     const cornerX = orgCoord.x + xMagnitude;
     const cornerY = orgCoord.y + yMagnitude;
 
-    //TODO: delete
-    this.game.add.rectangle(cornerX, cornerY, 100, 100, 0x00ffff); //aqua
+    if (Settings.getIsDebugMode()) {
+      this.game.add.rectangle(cornerX, cornerY, 100, 100, 0x00ffff); //aqua
+    }
 
     //calc to next column direction
     const angleToColumn = Phaser.Math.Angle.WrapDegrees(this.orgFaceAngle + 90);
@@ -670,20 +677,26 @@ export abstract class Organization {
         if (this.closestEnemyOrg!.getIsDefeated()) {
           //done fighting
           this.isActivelyFighting = false;
-          console.log(`${this.name}: completed fighting`);
+          if (Settings.getIsDebugMode()) {
+            console.log(`${this.name}: completed fighting`);
+          }
         }
       }
       //enemy too far away
       else {
-        console.log(`${this.name}: finding new threat`);
+        if (Settings.getIsDebugMode()) {
+          console.log(`${this.name}: finding new threat`);
+        }
         //not currently fighting anything. get closer to the fight
         this.findAndFightThreats();
 
         //face towards new enemy, if needed
         //TODO: make a method for unitToMoveMap.size == 0
         if (this.closestEnemyOrg != null && this.unitToMoveMap.size == 0) {
-          //TODO: this causes back-sliding for some reason. but i know this method works well?
-          console.log(`${this.name}: rotating towards far enemy`);
+          //TODO: this causes back-sliding for some reason. but i know this method works well? due to center position sliding.
+          if (Settings.getIsDebugMode()) {
+            console.log(`${this.name}: rotating towards far enemy`);
+          }
           this.calculateRotateArmy(this.orgFaceAngle);
         }
       }
@@ -722,11 +735,15 @@ export abstract class Organization {
           );
       }
 
-      console.log(`${this.name}: rotating under combat`);
+      if (Settings.getIsDebugMode()) {
+        console.log(`${this.name}: rotating under combat`);
+      }
       //TODO: this causes some shifting for some reason
       //this.calculateRotateArmy(this.orgMoveAngle);
       if (this.needsReform) {
-        console.log(`${this.name}: reforming under combat`);
+        if (Settings.getIsDebugMode()) {
+          console.log(`${this.name}: reforming under combat`);
+        }
         this.fillGapsAndCalculateFormup(); //this causes a mass disappearance???
         this.needsReform = false;
       }
@@ -780,13 +797,17 @@ export abstract class Organization {
 
     //walk towards enemy
     if (this.closestEnemyOrgDistance > this.getEngagementDistance()) {
-      console.log(`${this.name} : set to move`);
+      if (Settings.getIsDebugMode()) {
+        console.log(`${this.name} : set to move`);
+      }
       this.isMovingForward = true;
       this.isActivelyFighting = false;
     }
     //within range, stop and fire
     else {
-      console.log(`${this.name} : stop and engage`);
+      if (Settings.getIsDebugMode()) {
+        console.log(`${this.name} : stop and engage`);
+      }
       this.isMovingForward = false;
       this.isActivelyFighting = true;
     }
@@ -801,8 +822,10 @@ export abstract class Organization {
       );
 
     const enemyOrgName = (this.closestEnemyOrg as any as Organization).name;
-    console.log(`${this.name} : angle is ${this.orgFaceAngle}`);
-    console.log(`${this.name} : is fighting ${enemyOrgName}`);
+    if (Settings.getIsDebugMode()) {
+      console.log(`${this.name} : angle is ${this.orgFaceAngle}`);
+      console.log(`${this.name} : is fighting ${enemyOrgName}`);
+    }
   }
 
   /**
