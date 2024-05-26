@@ -10,7 +10,8 @@ import { GunFireEvent } from "../item_event/GunFireEvent";
 import { WeaponFactory } from "../item/WeaponFactory";
 import { AudioPool } from "../pool/AudioPool";
 import { Gun } from "../item/Gun";
-import { Utils } from "../Utils";
+import { Utils } from "../util/Utils";
+import { Stats } from "../util/Stats";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -55,10 +56,6 @@ export class Game extends Scene {
    * environmental
    */
   /**
-   * in phaser angle
-   */
-  private windDirection: number;
-  /**
    * in pixels
    */
   private windMagnitudeX: number;
@@ -100,7 +97,6 @@ export class Game extends Scene {
 
     this.windMagnitudeX = Utils.rollRandomExclusiveNegative(5);
     this.windMagnitudeY = Utils.rollRandomExclusiveNegative(5);
-    this.windDirection = Utils.rollRandomExclusiveNegative(180);
 
     this.msg_text = this.add.text(
       400,
@@ -220,6 +216,8 @@ export class Game extends Scene {
 
     if (this.isGameOver()) {
       console.log("game is over");
+      console.log("stats: ");
+      console.table(Stats.getStatsMap());
     }
   }
 
@@ -457,6 +455,8 @@ export class Game extends Scene {
 
       deadBodySprite.setAngle(unitContainer.angle);
       deadBodySprite.setDepth(-1);
+
+      Stats.incrementStat("dead-enemy");
     }
 
     this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
@@ -503,6 +503,8 @@ export class Game extends Scene {
 
       deadBodySprite.setAngle(unitContainer.angle);
       deadBodySprite.setDepth(-1);
+
+      Stats.incrementStat("dead-friend");
     }
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
@@ -521,6 +523,6 @@ export class Game extends Scene {
   }
 
   private isGameOver(): boolean {
-    return false;
+    return this.friendlyArmy.isDefeated() || this.enemyArmy.isDefeated();
   }
 }

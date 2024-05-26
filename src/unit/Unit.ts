@@ -1,6 +1,6 @@
-import { Utils } from "../Utils";
 import { Item } from "../item/Item";
 import { ItemEvent } from "../item/ItemEvent";
+import { Utils } from "../util/Utils";
 
 /**
  * Base Unit class for fighters.

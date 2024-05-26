@@ -1,5 +1,5 @@
-import { Utils } from "../Utils";
 import { GunFireEvent } from "../item_event/GunFireEvent";
+import { Utils } from "../util/Utils";
 import { Item } from "./Item";
 import { ItemEvent } from "./ItemEvent";
 

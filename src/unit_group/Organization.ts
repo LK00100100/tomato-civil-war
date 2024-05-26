@@ -1,8 +1,8 @@
-import { Coordinate } from "../Coordinate";
-import { Position } from "../Position";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
+import { Coordinate } from "../util/Coordinate";
+import { Position } from "../util/Position";
 
 /**
  * Military Organization unit.

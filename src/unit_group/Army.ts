@@ -89,6 +89,10 @@ export class Army {
   }
 
   public update(delta: number) {
-    this.armies.forEach((a) => a.update(delta));
+    this.armies.forEach((org) => org.update(delta));
+  }
+
+  public isDefeated(): boolean {
+    return this.armies.every((org) => org.getIsDefeated());
   }
 }
