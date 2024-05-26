@@ -324,8 +324,10 @@ export class Game extends Scene {
 
     //note: when adding to group, velocity will be set to 0.
     if (teamNumber == Game.TEAM_A) {
+      Stats.incrementStat("friendly-shots-fired");
       this.friendlyBullets.add(bulletSprite);
     } else if (teamNumber == Game.TEAM_B) {
+      Stats.incrementStat("enemy-shots-fired");
       this.enemyBullets.add(bulletSprite);
     }
 
@@ -377,6 +379,11 @@ export class Game extends Scene {
       if (bullet.isExpired()) {
         bulletSprite.destroy();
         this.friendlyBullets.remove(bulletSprite);
+        Stats.incrementStat("friendly-misses");
+
+        if (bullet.getIsPlayerOwned()) {
+          Stats.incrementStat("player-misses-enemy");
+        }
       }
     });
 
@@ -388,6 +395,7 @@ export class Game extends Scene {
       if (bullet.isExpired()) {
         bulletSprite.destroy();
         this.enemyBullets.remove(bulletSprite);
+        Stats.incrementStat("enemy-misses");
       }
     });
   }
@@ -456,11 +464,13 @@ export class Game extends Scene {
       deadBodySprite.setAngle(unitContainer.angle);
       deadBodySprite.setDepth(-1);
 
-      Stats.incrementStat("dead-enemy");
+      Stats.incrementStat("friendly-dead");
     }
 
     this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
     bulletSprite.destroy();
+
+    Stats.incrementStat("friendly-hits-enemy");
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
@@ -487,6 +497,8 @@ export class Game extends Scene {
 
     if (bullet.getIsPlayerOwned()) {
       this.audioHitmarker.play();
+
+      Stats.incrementStat("player-hits-enemy");
     }
 
     unit.decrementHp(bulletData.getDamage());
@@ -504,12 +516,13 @@ export class Game extends Scene {
       deadBodySprite.setAngle(unitContainer.angle);
       deadBodySprite.setDepth(-1);
 
-      Stats.incrementStat("dead-friend");
+      Stats.incrementStat("enemy-dead");
     }
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
     bulletSprite.destroy();
 
+    Stats.incrementStat("enemy-hits-friends");
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
   }
