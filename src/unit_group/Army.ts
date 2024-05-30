@@ -35,6 +35,14 @@ export class Army {
   }
 
   /**
+   * Returns the number of alive units.
+   * @returns number
+   */
+  getAliveArmyCount(): number {
+    return this.unitHitSprites.children.size;
+  }
+
+  /**
    * Removes and destroys the unit (and hit box) from the Army.
    * @param unit
    */

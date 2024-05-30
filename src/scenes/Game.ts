@@ -148,6 +148,15 @@ export class Game extends Scene {
     //move player to center
     this.tomatoPlayer.x += 15200;
     this.tomatoPlayer.y += 1000;
+
+    Stats.incrementStat(
+      "friendly-army-units-started",
+      this.friendlyArmy.getAliveArmyCount()
+    );
+    Stats.incrementStat(
+      "enemy-army-units-started",
+      this.enemyArmy.getAliveArmyCount()
+    );
   }
 
   private initKeyboard() {
@@ -220,6 +229,15 @@ export class Game extends Scene {
     if (this.isGameOver()) {
       console.log("game is over");
       console.log("stats: ");
+      Stats.setStat(
+        "friendly-army-units-alive",
+        this.friendlyArmy.getAliveArmyCount()
+      );
+      Stats.setStat(
+        "enemy-army-units-alive",
+        this.enemyArmy.getAliveArmyCount()
+      );
+
       console.table(Stats.getStatsMap());
     }
   }

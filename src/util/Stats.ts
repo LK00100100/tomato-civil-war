@@ -14,12 +14,19 @@ export class Stats {
     return Stats.instance;
   }
 
-  public static incrementStat(key: string, incrNumber?: number) {
+  public static incrementStat(key: string, incrNumber = 1) {
     const oldNumber = Stats.instance.statsMap.get(key) || 0;
 
-    incrNumber ??= 1;
-
     Stats.instance.statsMap.set(key, oldNumber + incrNumber);
+  }
+
+  /**
+   *
+   * @param key
+   * @param setNumber sets the key to this number. Defaults to 0
+   */
+  public static setStat(key: string, setNumber = 0) {
+    Stats.instance.statsMap.set(key, setNumber);
   }
 
   public static getStatsMap() {
