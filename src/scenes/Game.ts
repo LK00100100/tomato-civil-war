@@ -149,7 +149,12 @@ export class Game extends Scene {
     tomatoData.setIsPlayerOwned(true);
     const mySelectedItem = tomatoData.getSelectedItem();
     if (mySelectedItem instanceof Gun) {
-      mySelectedItem.setCooldownOverCallback(() => this.audioGunClick.play());
+      mySelectedItem.setCooldownOverCallback(() => {
+        (this.audioGunClick as Phaser.Sound.HTML5AudioSound).setVolume(
+          Settings.getCurrentVolume()
+        );
+        this.audioGunClick.play();
+      });
     }
 
     const yourCompany = new Company(this, "A-company-player");
@@ -468,8 +473,10 @@ export class Game extends Scene {
       this.tomatoPlayer.y
     );
 
-    const volume =
+    let volume =
       Math.max(0, Game.VOLUME_DISTANCE - distance) / Game.VOLUME_DISTANCE;
+
+    volume = volume * Settings.getCurrentVolume();
 
     return volume;
   }
@@ -602,6 +609,9 @@ export class Game extends Scene {
     );
 
     if (bullet.getIsPlayerOwned()) {
+      (this.audioHitmarker as Phaser.Sound.HTML5AudioSound).setVolume(
+        Settings.getCurrentVolume()
+      );
       this.audioHitmarker.play();
 
       Stats.incrementStat("player-hits-enemy");
