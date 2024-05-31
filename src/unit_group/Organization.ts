@@ -675,7 +675,10 @@ export abstract class Organization {
       //this company is currently firing at the enemy
       if (this.isActivelyFighting) {
         if (this.closestEnemyOrg!.getIsDefeated()) {
-          //done fighting
+          //enemy is defeated
+          const { x, y } = this.getCenterPosition();
+          this.game.playBugle(x, y);
+
           this.isActivelyFighting = false;
           if (Settings.getIsDebugMode()) {
             console.log(`${this.name}: completed fighting`);

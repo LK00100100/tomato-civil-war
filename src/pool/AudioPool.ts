@@ -1,8 +1,8 @@
 import { Game } from "../scenes/Game";
 
 /**
- * Stores a bunch of sounds and plays them as needed.
- * If no sounds are available, play nothing.
+ * Stores a set amount of Phaser sounds (of one kind) and plays them as needed.
+ * If no sounds are available, due to them currently playing, play nothing.
  */
 export class AudioPool {
   private sounds: Array<Phaser.Sound.BaseSound>;

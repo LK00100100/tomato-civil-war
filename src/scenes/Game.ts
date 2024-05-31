@@ -56,6 +56,7 @@ export class Game extends Scene {
    */
   private audioHitmarker: Phaser.Sound.BaseSound;
   private audioGunClick: Phaser.Sound.BaseSound;
+  private bugleCompleteAudioPool: AudioPool;
   private musketFireAudioPool: AudioPool;
 
   /**
@@ -108,6 +109,11 @@ export class Game extends Scene {
     this.audioHitmarker = this.sound.add("audio-hitmarker-player");
     this.audioGunClick = this.sound.add("audio-gun-click");
     this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 100);
+    this.bugleCompleteAudioPool = new AudioPool(
+      this,
+      "audio-bugle-complete",
+      10
+    );
 
     this.windMagnitudeX = Utils.rollRandomExclusiveNegative(5);
     this.windMagnitudeY = Utils.rollRandomExclusiveNegative(5);
@@ -437,9 +443,27 @@ export class Game extends Scene {
     this.bulletTrailEntities.set(bulletTrail, new BulletTrail(bulletSprite));
 
     // make loud noises
+    const volume = this.getVolumeFromPlayer(unitContainer.x, unitContainer.y);
+    this.musketFireAudioPool.play(volume);
+
+    return bulletData;
+  }
+
+  public playBugle(x: number, y: number) {
+    const volume = this.getVolumeFromPlayer(x, y);
+    this.bugleCompleteAudioPool.play(volume);
+  }
+
+  /**
+   * Far away sounds are quiet relative to the player.
+   * @param x
+   * @param y
+   * @returns A value [0, 1]. 0 is 0%. 1 is 100%.
+   */
+  private getVolumeFromPlayer(x: number, y: number) {
     const distance = Phaser.Math.Distance.Between(
-      unitContainer.x,
-      unitContainer.y,
+      x,
+      y,
       this.tomatoPlayer.x,
       this.tomatoPlayer.y
     );
@@ -447,9 +471,7 @@ export class Game extends Scene {
     const volume =
       Math.max(0, Game.VOLUME_DISTANCE - distance) / Game.VOLUME_DISTANCE;
 
-    this.musketFireAudioPool.play(volume);
-
-    return bulletData;
+    return volume;
   }
 
   private updateBullets(delta: number) {
