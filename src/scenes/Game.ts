@@ -360,11 +360,16 @@ export class Game extends Scene {
         continue;
       }
 
-      //calc tail
-      //if (bulletTrailData.shouldGrow()) { TODO:
+      //calc trail tail
       const bulletSprite = bulletTrailData.getBulletSprite();
       bulletTrail.x2 = bulletSprite.x;
       bulletTrail.y2 = bulletSprite.y;
+
+      if (!bulletTrailData.shouldGrow()) {
+        //stop growing bullet trail
+        bulletTrail.x1 = bulletTrailData.getEndX();
+        bulletTrail.y1 = bulletTrailData.getEndY();
+      }
 
       this.graphics.strokeLineShape(bulletTrail);
     }

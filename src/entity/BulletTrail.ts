@@ -13,9 +13,11 @@ export class BulletTrail {
   /**
    * The tail stops growing after this much time as passed.
    */
-  private static readonly GROW_DURATION = 4000;
+  private static readonly GROW_DURATION = 500;
 
   constructor(bulletSprite: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
+    this.duration = 0;
+
     this.bulletSprite = bulletSprite;
     this.xVelocity = bulletSprite.body.velocity.x;
     this.yVelocity = bulletSprite.body.velocity.y;
@@ -34,6 +36,16 @@ export class BulletTrail {
 
   public getBulletSprite() {
     return this.bulletSprite;
+  }
+
+  public getEndX() {
+    //prettier-ignore
+    return this.bulletSprite.x - (this.xVelocity / 2);
+  }
+
+  public getEndY() {
+    //prettier-ignore
+    return this.bulletSprite.y - (this.yVelocity / 2);
   }
 
   /**
