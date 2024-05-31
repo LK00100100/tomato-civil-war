@@ -13,6 +13,7 @@ import { Gun } from "../item/Gun";
 import { Utils } from "../util/Utils";
 import { Stats } from "../util/Stats";
 import { Settings } from "../util/Settings";
+import { BulletTrail } from "../entity/BulletTrail";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -25,6 +26,10 @@ export class Game extends Scene {
 
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
+  /**
+   * BulletTrail line -> BulletTrail data
+   */
+  public bulletTrailEntities: Map<Phaser.Geom.Line, BulletTrail>;
   public smokeEntities: Set<Phaser.GameObjects.Sprite>;
 
   //TODO: static enums
@@ -68,6 +73,11 @@ export class Game extends Scene {
    */
   private static readonly VOLUME_DISTANCE = 7500;
 
+  /**
+   * Mainly for bullet trails
+   */
+  private graphics: Phaser.GameObjects.Graphics;
+
   constructor() {
     super("Game");
   }
@@ -93,6 +103,7 @@ export class Game extends Scene {
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
     this.smokeEntities = new Set();
+    this.bulletTrailEntities = new Map();
 
     this.audioHitmarker = this.sound.add("audio-hitmarker-player");
     this.audioGunClick = this.sound.add("audio-gun-click");
@@ -157,6 +168,9 @@ export class Game extends Scene {
       "enemy-army-units-started",
       this.enemyArmy.getAliveArmyCount()
     );
+
+    //for bullet trails
+    this.graphics = this.add.graphics();
   }
 
   private initKeyboard() {
@@ -217,8 +231,9 @@ export class Game extends Scene {
   update(_: any, delta: any) {
     //note: if people die first, then remove and stop processing them.
 
-    this.updateSmoke(delta);
+    this.updateSmokes(delta);
     this.updateBullets(delta);
+
     this.checkCollisions();
 
     this.enemyArmy.update(delta);
@@ -309,7 +324,7 @@ export class Game extends Scene {
     this.camera.centerOn(playerX, playerY);
   }
 
-  private updateSmoke(delta: number): void {
+  private updateSmokes(delta: number): void {
     for (let smoke of this.smokeEntities) {
       let smokeData: Smoke = smoke.getData("data");
       smokeData.update(delta);
@@ -323,6 +338,35 @@ export class Game extends Scene {
       smoke.x += this.windMagnitudeX;
       smoke.y += this.windMagnitudeY;
       smoke.setAlpha(smokeData.getOpacity());
+    }
+  }
+
+  /**
+   * Call after bullets are updated.
+   * @param delta
+   */
+  private updateBulletTrails(delta: number): void {
+    this.graphics.clear();
+    this.graphics.setAlpha(0.4); //all bullet trails
+    this.graphics.lineStyle(25, 0xffffff); //white
+
+    //TODO: use pool
+    for (const [bulletTrail, bulletTrailData] of this.bulletTrailEntities) {
+      bulletTrailData.update(delta);
+
+      if (bulletTrailData.isExpired()) {
+        this.bulletTrailEntities.delete(bulletTrail);
+        //TODO: use pool
+        continue;
+      }
+
+      //calc tail
+      //if (bulletTrailData.shouldGrow()) { TODO:
+      const bulletSprite = bulletTrailData.getBulletSprite();
+      bulletTrail.x2 = bulletSprite.x;
+      bulletTrail.y2 = bulletSprite.y;
+
+      this.graphics.strokeLineShape(bulletTrail);
     }
   }
 
@@ -353,9 +397,9 @@ export class Game extends Scene {
     }
 
     //note: velocity allows for collision detection. setX doesn't work like that.
-    const randomRotation = gunFireEvent.fireAngle;
+    const randomRotationAdd = gunFireEvent.fireAngle;
     this.physics.velocityFromAngle(
-      unitContainer.angle + randomRotation,
+      unitContainer.angle + randomRotationAdd,
       Bullet.BULLET_SPEED,
       bulletSprite.body.velocity
     );
@@ -374,6 +418,18 @@ export class Game extends Scene {
     smoke.setAngle(unitContainer.angle);
 
     this.smokeEntities.add(smoke);
+
+    //TODO: make entity pool
+    //make bullet trail
+    const bulletTrail = new Phaser.Geom.Line(
+      bulletSprite.x,
+      bulletSprite.y,
+      bulletSprite.x,
+      bulletSprite.y
+    );
+    this.graphics.strokeLineShape(bulletTrail);
+    Phaser.Geom.Line.Rotate(bulletTrail, bulletSprite.rotation);
+    this.bulletTrailEntities.set(bulletTrail, new BulletTrail(bulletSprite));
 
     // make loud noises
     const distance = Phaser.Math.Distance.Between(
@@ -419,6 +475,8 @@ export class Game extends Scene {
         Stats.incrementStat("enemy-misses");
       }
     });
+
+    this.updateBulletTrails(delta); //call this after the bullets are updated
   }
 
   private checkCollisions() {
