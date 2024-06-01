@@ -20,7 +20,10 @@ export default class StatsScene extends Scene {
 
   create() {
     console.log("opening stats screen");
-    this.statsText = this.add.text(100, 100, "Battle Complete").setDepth(1000);
+    this.add.sprite(500, 300, "ui-battle-stats-paper");
+
+    const textConfig = { fontSize: 20, color: "black" };
+    this.statsText = this.add.text(300, 100, "tbd", textConfig).setDepth(1000);
 
     this.createButtons();
 
@@ -28,7 +31,7 @@ export default class StatsScene extends Scene {
   }
 
   private createButtons(): void {
-    this.okButtonSprite = this.add.sprite(100, 510, "btn-ok").setInteractive();
+    this.okButtonSprite = this.add.sprite(500, 600, "btn-ok").setInteractive();
 
     const okClickFunc = () => {
       console.log("ok");

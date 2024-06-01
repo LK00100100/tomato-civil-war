@@ -116,7 +116,7 @@ export class Game extends Scene {
 
     this.audioHitmarker = this.sound.add("audio-hitmarker-player");
     this.audioGunClick = this.sound.add("audio-gun-click");
-    this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 100);
+    this.musketFireAudioPool = new AudioPool(this, "audio-musket-fire", 25);
     this.bugleCompleteAudioPool = new AudioPool(
       this,
       "audio-bugle-complete",
@@ -213,7 +213,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 3;
+    const numCompanies = 1;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -237,7 +237,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 4;
+    const numCompanies = 1;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);

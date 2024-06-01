@@ -52,6 +52,7 @@ export class Preloader extends Scene {
      * ui
      */
     this.load.image("btn-ok", "ui/btn-ok.png");
+    this.load.image("ui-battle-stats-paper", "ui/ui-battle-stats-paper.png");
   }
 
   create() {
