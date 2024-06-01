@@ -32,4 +32,13 @@ export class Stats {
   public static getStatsMap() {
     return Stats.instance.statsMap;
   }
+
+  /**
+   *
+   * @param key
+   * @returns Defaults to 0.
+   */
+  public static getStat(key: string): number {
+    return Stats.instance.statsMap.get(key) ?? 0;
+  }
 }

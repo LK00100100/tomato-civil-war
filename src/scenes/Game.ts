@@ -14,6 +14,7 @@ import { Utils } from "../util/Utils";
 import { Stats } from "../util/Stats";
 import { Settings } from "../util/Settings";
 import { BulletTrail } from "../entity/BulletTrail";
+import StatsScene from "./subscenes/StatsScene";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -78,6 +79,11 @@ export class Game extends Scene {
    * Mainly for bullet trails
    */
   private graphics: Phaser.GameObjects.Graphics;
+
+  /**
+   * UI
+   */
+  private statsScene: StatsScene;
 
   constructor() {
     super("Game");
@@ -180,8 +186,16 @@ export class Game extends Scene {
       this.enemyArmy.getAliveArmyCount()
     );
 
-    //for bullet trails
+    //for drawing bullet trails, and perhaps other types of shapes
     this.graphics = this.add.graphics();
+
+    /**
+     * ui
+     */
+    //turn on this scene
+    this.statsScene = new StatsScene();
+
+    this.scene.add(StatsScene.HANDLE, this.statsScene, false);
   }
 
   private initKeyboard() {
@@ -195,7 +209,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 6;
+    const numCompanies = 3;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -219,7 +233,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 6;
+    const numCompanies = 4;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);
@@ -242,6 +256,10 @@ export class Game extends Scene {
   update(_: any, delta: any) {
     //note: if people die first, then remove and stop processing them.
 
+    if (this.isGameOver()) {
+      return;
+    }
+
     this.updateSmokes(delta);
     this.updateBullets(delta);
 
@@ -252,9 +270,9 @@ export class Game extends Scene {
 
     this.processInput(delta);
 
+    //call only once
     if (this.isGameOver()) {
       console.log("game is over");
-      console.log("stats: ");
       Stats.setStat(
         "friendly-army-units-alive",
         this.friendlyArmy.getAliveArmyCount()
@@ -265,6 +283,8 @@ export class Game extends Scene {
       );
 
       console.table(Stats.getStatsMap());
+
+      this.scene.launch(StatsScene.HANDLE);
     }
   }
 
@@ -309,13 +329,7 @@ export class Game extends Scene {
       const tomatoData: Tomato = this.tomatoPlayer.getData("data");
       const event = tomatoData.doAction();
       if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
-        const bullet = this.shootBullet(
-          tomatoData,
-          Game.TEAM_A,
-          event as GunFireEvent
-        );
-
-        bullet.setIsPlayerOwned(true);
+        this.shootBullet(tomatoData, Game.TEAM_A, event as GunFireEvent);
       }
 
       //set movement
@@ -401,15 +415,22 @@ export class Game extends Scene {
     );
 
     const bulletData = new Bullet(gunFireEvent.damage);
+    if (unit.getIsPlayerOwned()) {
+      bulletData.setIsPlayerOwned(true);
+    }
     bulletSprite.setData("data", bulletData);
 
     //note: when adding to group, velocity will be set to 0.
     if (teamNumber == Game.TEAM_A) {
-      Stats.incrementStat("friendly-shots-fired");
+      Stats.incrementStat("friendly-shots-fired"); //and player
       this.friendlyBullets.add(bulletSprite);
     } else if (teamNumber == Game.TEAM_B) {
       Stats.incrementStat("enemy-shots-fired");
       this.enemyBullets.add(bulletSprite);
+    }
+
+    if (bulletData.getIsPlayerOwned()) {
+      Stats.incrementStat("player-shots-fired");
     }
 
     //note: velocity allows for collision detection. setX doesn't work like that.
@@ -583,7 +604,7 @@ export class Game extends Scene {
     this.enemyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
     bulletSprite.destroy();
 
-    Stats.incrementStat("friendly-hits-enemy");
+    Stats.incrementStat("enemy-hits-friendly");
 
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
@@ -633,12 +654,16 @@ export class Game extends Scene {
       deadBodySprite.setDepth(-1);
 
       Stats.incrementStat("enemy-dead");
+
+      if (bullet.getIsPlayerOwned()) {
+        Stats.incrementStat("player-kills-enemy");
+      }
     }
 
     this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
     bulletSprite.destroy();
 
-    Stats.incrementStat("enemy-hits-friends");
+    Stats.incrementStat("friendly-hits-enemy");
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
   }
