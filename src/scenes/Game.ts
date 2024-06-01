@@ -15,6 +15,7 @@ import { Stats } from "../util/Stats";
 import { Settings } from "../util/Settings";
 import { BulletTrail } from "../entity/BulletTrail";
 import StatsScene from "./subscenes/StatsScene";
+import BattleInfoScene from "./subscenes/BattleInfoScene";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -84,6 +85,7 @@ export class Game extends Scene {
    * UI
    */
   private statsScene: StatsScene;
+  private battleInfoScene: BattleInfoScene;
 
   constructor() {
     super("Game");
@@ -194,8 +196,10 @@ export class Game extends Scene {
      */
     //turn on this scene
     this.statsScene = new StatsScene();
+    this.battleInfoScene = new BattleInfoScene(this);
 
     this.scene.add(StatsScene.HANDLE, this.statsScene, false);
+    this.scene.add(BattleInfoScene.HANDLE, this.battleInfoScene, true);
   }
 
   private initKeyboard() {
@@ -678,5 +682,9 @@ export class Game extends Scene {
 
   private isGameOver(): boolean {
     return this.friendlyArmy.isDefeated() || this.enemyArmy.isDefeated();
+  }
+
+  public getPlayerUnit() {
+    return this.tomatoPlayer;
   }
 }

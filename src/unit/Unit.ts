@@ -66,11 +66,11 @@ export abstract class Unit {
     return this.items[this.selectedItem];
   }
 
-  resetRandomOffsetDelta() {
+  private resetRandomOffsetDelta() {
     this.deltaRandomOffset = 0;
   }
 
-  setIsPlayerOwned(isPlayerOwned: boolean) {
+  public setIsPlayerOwned(isPlayerOwned: boolean) {
     this.isPlayerOwned = isPlayerOwned;
   }
 
@@ -78,7 +78,7 @@ export abstract class Unit {
    * Is player controlled?
    * @returns
    */
-  getIsPlayerOwned() {
+  public getIsPlayerOwned() {
     return this.isPlayerOwned;
   }
 
@@ -87,7 +87,7 @@ export abstract class Unit {
    * @param container has various sprites as one. "body" is the hit box.
    * @returns
    */
-  setUnitContainer(container: Phaser.GameObjects.Container): void {
+  public setUnitContainer(container: Phaser.GameObjects.Container): void {
     this.unitContainer = container;
   }
 
@@ -140,5 +140,9 @@ export abstract class Unit {
 
   public isDead(): boolean {
     return this.hp <= 0;
+  }
+
+  public getHp() {
+    return this.hp;
   }
 }

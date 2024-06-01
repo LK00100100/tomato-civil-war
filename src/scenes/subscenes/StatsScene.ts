@@ -8,16 +8,12 @@ import { Stats } from "../../util/Stats";
  * Doesn't do any heavy calculations.
  */
 export default class StatsScene extends Scene {
-  public static readonly HANDLE = "InfoScene"; //has to be same as above
+  public static readonly HANDLE = "StatsScene"; //has to be same as above
 
   private statsText!: Phaser.GameObjects.Text; //stats messages
 
   private okButtonSprite: Phaser.GameObjects.Sprite;
 
-  /**
-   *
-   * @param {GameScene} gameScene
-   */
   constructor() {
     super(StatsScene.HANDLE); //has to be same as below
   }
