@@ -10,7 +10,7 @@ export class Settings {
   /**
    * a number between 0 (0%) and 1 (100%)
    */
-  private currentVolume: number = 0.5;
+  private currentVolume: number = 0.1;
 
   private static instance: Settings = new Settings();
 

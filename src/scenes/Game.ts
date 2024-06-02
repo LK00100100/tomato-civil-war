@@ -200,6 +200,8 @@ export class Game extends Scene {
 
     this.scene.add(StatsScene.HANDLE, this.statsScene, false);
     this.scene.add(BattleInfoScene.HANDLE, this.battleInfoScene, true);
+
+    this.input.setDefaultCursor("crosshair");
   }
 
   private initKeyboard() {
@@ -213,7 +215,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 1;
+    const numCompanies = 2;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -237,7 +239,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 1;
+    const numCompanies = 2;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);
