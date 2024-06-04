@@ -44,11 +44,17 @@ export class Army {
 
   /**
    * Removes and destroys the unit (and hit box) from the Army.
+   * If no unit in the army, nothing happens.
    * @param unit
    */
   removeUnit(unit: Unit): void {
     const unitContainer = unit.getUnitContainer();
     const hitSprite = unitContainer.getByName("body");
+
+    //nothing to remove
+    if (!this.unitHitSprites.contains(hitSprite)) {
+      return;
+    }
 
     this.unitHitSprites.remove(hitSprite);
 

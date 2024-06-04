@@ -16,6 +16,8 @@ import { Settings } from "../util/Settings";
 import { BulletTrail } from "../entity/BulletTrail";
 import StatsScene from "./subscenes/StatsScene";
 import BattleInfoScene from "./subscenes/BattleInfoScene";
+import { Melee } from "../item/Melee";
+import { MeleeAttackEvent } from "../item_event/MeleeAttackEvent";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -26,8 +28,22 @@ export class Game extends Scene {
 
   public readonly MOVE_SPEED = 25;
 
+  //TODO: one set of bullets. friendly fire
+  //TODO: test with regular group with regular sprites
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
+
+  /**
+   * A visible melee weapon here.
+   * Move actively attacking into this.attackingMelees.
+   */
+  public nonAttackingMelees: Phaser.Physics.Arcade.Group;
+  /**
+   * Melee weapons that are actively dangerous. For collision checking.
+   * When done attacking, move to this.nonAttackingMelees.
+   */
+  public attackingMelees: Phaser.Physics.Arcade.Group;
+
   /**
    * BulletTrail line -> BulletTrail data
    */
@@ -111,6 +127,9 @@ export class Game extends Scene {
      */
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
+    this.nonAttackingMelees = this.physics.add.group();
+    this.attackingMelees = this.physics.add.group();
+
     this.smokeEntities = new Set();
     this.bulletTrailEntities = new Map();
 
@@ -149,9 +168,14 @@ export class Game extends Scene {
     /**
      * Make player tomato
      */
+    const pikeSprite = WeaponFactory.makePikeSpriteWithData(this);
+    this.nonAttackingMelees.add(pikeSprite);
+
+    //TODO: add also a rifle then pike
     this.tomatoPlayer = UnitFactory.createTomato(
       this,
-      WeaponFactory.makeRifleSpriteWithData(this)
+      //WeaponFactory.makeRifleSpriteWithData(this)
+      pikeSprite
     );
     const tomatoData: Unit = this.tomatoPlayer.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
@@ -268,6 +292,7 @@ export class Game extends Scene {
 
     this.updateSmokes(delta);
     this.updateBullets(delta);
+    this.updateMelee(delta);
 
     this.checkCollisions();
 
@@ -338,7 +363,12 @@ export class Game extends Scene {
         this.shootBullet(tomatoData, Game.TEAM_A, event as GunFireEvent);
       }
 
-      //set movement
+      if (
+        event.name.startsWith("item-melee") &&
+        event.name.endsWith("attack")
+      ) {
+        this.useMelee(tomatoData, Game.TEAM_A, event as MeleeAttackEvent);
+      }
     });
 
     //set player's tomato facing
@@ -406,11 +436,12 @@ export class Game extends Scene {
     }
   }
 
+  //TODO: maybe put teamn umber in unit? too much memory?
   public shootBullet(
     unit: Unit,
     teamNumber: number,
     gunFireEvent: GunFireEvent
-  ): Bullet {
+  ): void {
     const unitContainer = unit.getUnitContainer();
     //const weaponSprite: Phaser.GameObjects.Sprite = unitContainer.getByName("weapon");
 
@@ -477,8 +508,20 @@ export class Game extends Scene {
     // make loud noises
     const volume = this.getVolumeFromPlayer(unitContainer.x, unitContainer.y);
     this.musketFireAudioPool.play(volume);
+  }
 
-    return bulletData;
+  public useMelee(
+    unit: Unit,
+    teamNumber: number,
+    meleeAttackEvent: MeleeAttackEvent
+  ): void {
+    //TODO:
+
+    const container = unit.getUnitContainer();
+    const weaponSprite = container.getByName("weapon");
+
+    this.nonAttackingMelees.remove(weaponSprite);
+    this.attackingMelees.add(weaponSprite);
   }
 
   public playBugle(x: number, y: number) {
@@ -540,7 +583,23 @@ export class Game extends Scene {
     this.updateBulletTrails(delta); //call this after the bullets are updated
   }
 
+  /**
+   * Melee weapons which is attacking are moved forward and back.
+   * The weapon data dictates movement.
+   * @param delta
+   */
+  private updateMelee(delta: number): void {
+    this.attackingMelees.getChildren().forEach((meleeSprite) => {
+      const meleeData = meleeSprite.getData("data");
+      meleeData.update(delta);
+
+      //TODO:
+    });
+  }
+
   private checkCollisions() {
+    //TODO: friendly fire
+
     //friends collide with enemy bullets
     this.physics.world.overlap(
       this.friendlyArmy.getUnitHitSprites(),
@@ -555,6 +614,24 @@ export class Game extends Scene {
       this.enemyArmy.getUnitHitSprites(),
       this.friendlyBullets,
       this.collideEnemyWithFriendlyBullets.bind(this),
+      undefined,
+      this
+    );
+
+    //TODO: friendly fire
+    //check melee hits any units
+    this.physics.world.overlap(
+      this.friendlyArmy.getUnitHitSprites(),
+      this.attackingMelees,
+      this.collideUnitsWithMelee.bind(this),
+      undefined,
+      this
+    );
+
+    this.physics.world.overlap(
+      this.enemyArmy.getUnitHitSprites(),
+      this.attackingMelees,
+      this.collideUnitsWithMelee.bind(this),
       undefined,
       this
     );
@@ -672,6 +749,53 @@ export class Game extends Scene {
     Stats.incrementStat("friendly-hits-enemy");
     //TODO: destroy container, but not guns
     //TODO: add dead bodies
+  }
+
+  private collideUnitsWithMelee(
+    unitSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile,
+    meleeSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile
+  ) {
+    const meleeData: Melee = (
+      meleeSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
+    const physicsSprite =
+      unitSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const unit: Unit = physicsSprite.getData("data");
+
+    //your weapon? do nothing
+    const unitContainer = unit.getUnitContainer();
+    const unitWeaponSprite = unitContainer.getByName("weapon");
+    if (unitWeaponSprite == meleeSprite) {
+      return;
+    }
+
+    //TODO: player stats and more stats
+
+    unit.decrementHp(meleeData.calcDamage());
+
+    if (unit.isDead()) {
+      //it's in one of these
+      this.friendlyArmy.removeUnit(unit);
+      this.enemyArmy.removeUnit(unit);
+
+      const unitContainer = unit.getUnitContainer();
+      const deadBodySprite = this.add.sprite(
+        unitContainer.x,
+        unitContainer.y,
+        "unit-tomato-dead"
+      );
+      //TODO: enums for unit-tomato-dead etc
+
+      deadBodySprite.setAngle(unitContainer.angle);
+      deadBodySprite.setDepth(-1);
+    }
+
+    //TODO: destroy container, but not guns
   }
 
   public getFriendlyArmy() {

@@ -1,3 +1,4 @@
+import { NoEvent } from "../item_event/NoEvent";
 import { ItemEvent } from "./ItemEvent";
 
 /**
@@ -9,6 +10,10 @@ export abstract class Item {
    */
   protected cooldownOverCallback: () => void;
 
+  protected abstract getCooldownDuration(): number;
+
+  protected abstract getItemName(): string;
+
   public setCooldownOverCallback(callback: () => void) {
     this.cooldownOverCallback = callback;
   }
@@ -16,4 +21,12 @@ export abstract class Item {
   public abstract update(delta: number): void;
 
   public abstract useItem(): ItemEvent;
+
+  /**
+   * Item may have a secondary use.
+   * Or can return nothing.
+   */
+  public useItemSecondary(): ItemEvent {
+    return NoEvent.getSingleton();
+  }
 }

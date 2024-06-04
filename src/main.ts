@@ -18,6 +18,7 @@ const config: Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
+  //TODO: can i remove physics and use regular sprites?
   physics: {
     default: "arcade",
     arcade: {

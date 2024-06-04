@@ -22,6 +22,7 @@ export class UnitFactory {
         WeaponFactory.makeSmoothboreGunSpriteWithData(game);
     }
 
+    //TODO: enums
     startingWeaponSprite.setName("weapon");
     const gunData = startingWeaponSprite.getData("data");
 

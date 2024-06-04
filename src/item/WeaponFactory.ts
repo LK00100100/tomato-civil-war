@@ -1,9 +1,12 @@
 import { Game } from "../scenes/Game";
+import { Pike } from "./Pike";
 import { Rifle } from "./Rifle";
 import { SmoothboreGun } from "./SmoothboreGun";
 
 /**
  * Makes weapons.
+ * Remember that the weapon sprite relative to the Unit sprite, is set
+ * from 0, 0 (center) of the unit sprite, while facing phaser.angle of 0 (right).
  */
 export class WeaponFactory {
   public static makeSmoothboreGunSpriteWithData(
@@ -20,5 +23,13 @@ export class WeaponFactory {
     gunSprite.setData("data", new Rifle());
 
     return gunSprite;
+  }
+
+  //TODO: physics sprite
+  public static makePikeSpriteWithData(game: Game): Phaser.GameObjects.Sprite {
+    const meleeSprite = game.physics.add.sprite(200, 100, "item-melee-pike");
+    meleeSprite.setData("data", new Pike());
+
+    return meleeSprite;
   }
 }
