@@ -60,18 +60,19 @@ export default class StatsScene extends Scene {
       "enemy-army-units-alive"
     )} / ${Stats.getStat("enemy-army-units-started")}`;
 
-    txt += `\n\nFriendly Dead: ${Stats.getStat("friendly-dead")}`;
+    txt += `\nFriendly Dead: ${Stats.getStat("friendly-dead")}`;
     txt += `\nEnemy Dead: ${Stats.getStat("enemy-dead")}`;
 
     const friendlyHits = Stats.getStat("friendly-hits-enemy");
     const friendlyShots = Stats.getStat("friendly-shots-fired");
-    const friendlyAccuracy = ((friendlyHits / friendlyShots) * 100).toFixed(2);
+    const friendlyAccuracy =
+      ((friendlyHits / friendlyShots) * 100).toFixed(2) || 0.0;
 
     txt += `\n\nFriendy Hits : ${friendlyHits} / ${friendlyShots} (${friendlyAccuracy}%)`;
 
     const enemyHits = Stats.getStat("enemy-hits-friendly");
     const enemyShots = Stats.getStat("enemy-shots-fired");
-    const enemyAccuracy = ((enemyHits / enemyShots) * 100).toFixed(2);
+    const enemyAccuracy = ((enemyHits / enemyShots) * 100).toFixed(2) || 0.0;
 
     txt += `\nEnemy Hits : ${enemyHits} / ${enemyShots} (${enemyAccuracy}%)`;
 
@@ -80,7 +81,7 @@ export default class StatsScene extends Scene {
 
     const playerHits = Stats.getStat("player-hits-enemy");
     const playerShots = Stats.getStat("player-shots-fired");
-    const playerAccuracy = ((playerHits / playerShots) * 100).toFixed(2);
+    const playerAccuracy = ((playerHits / playerShots) * 100).toFixed(2) || 0.0;
 
     txt += `\n\nPlayer Hits : ${playerHits} / ${playerShots} (${playerAccuracy}%)`;
     txt += `\nPlayer Misses: ${Stats.getStat("player-misses-enemy")}`;
