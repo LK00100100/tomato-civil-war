@@ -10,6 +10,8 @@ import { Settings } from "../util/Settings";
  * Draws, calculates, and orders Units under the Organization.
  */
 export abstract class Organization {
+  //TODO: make an organization that is just you and remove "is player unit" check
+
   /**
    * Name for this Organization. Preferably unique.
    */
@@ -61,6 +63,17 @@ export abstract class Organization {
   protected deltaAssessFightDuration: number;
 
   protected units: Set<Phaser.GameObjects.Container>;
+
+  /**
+   * The most amount of units added to this organization at any time.
+   * If you add 10 units, the number is 10. If 10 units die, the number is still 10.
+   */
+  private mostUnitCount: number;
+
+  /**
+   * If true, the unit is routing (running away).
+   */
+  private isRouting: boolean;
 
   /**
    * If the organization has no more units, morale is broken, or etc.
@@ -125,10 +138,14 @@ export abstract class Organization {
 
     this.needsReform = false;
     this.isDefeated = false;
+
+    this.mostUnitCount = 0;
+
+    this.isRouting = false;
   }
 
   public getIsDefeated() {
-    return this.isDefeated;
+    return this.isDefeated || this.isRouting;
   }
 
   /**
@@ -172,6 +189,8 @@ export abstract class Organization {
    */
   public addUnit(unit: Unit): void {
     this.units.add(unit.getUnitContainer());
+
+    this.mostUnitCount++;
   }
 
   public removeUnit(unit: Unit): void {
@@ -196,6 +215,7 @@ export abstract class Organization {
 
   //TODO: set unit tests
   //TODO: perhaps get center of empty units
+  //TODO: just make a center. and move that.
   /**
    * Tries to draw a box around remaining units.
    * Imagine the first row only has the right half. The center is the center of that.
@@ -560,7 +580,7 @@ export abstract class Organization {
     }
 
     //prettier-ignore
-    let halfWidth = Math.floor(this.unitRows[0].length)  - 0.5;
+    let halfWidth = Math.floor(this.unitRows[0].length) - 0.5;
 
     halfWidth *= Organization.TOMATO_WIDTH_PIXELS;
     //prettier-ignore
@@ -643,8 +663,6 @@ export abstract class Organization {
    * @param delta time in millseconds since the last frame.
    */
   public update(delta: number) {
-    if (this.getIsDefeated()) return;
-
     this.deltaAssessEnemyDuration += delta;
     this.deltaAssessFightDuration += delta;
 
@@ -657,10 +675,12 @@ export abstract class Organization {
     if (this.unitToMoveMap.size > 0) {
       this.moveIndividualUnits();
     } else {
-      if (this.isMovingForward) {
+      if (this.isMovingForward || this.isRouting) {
         this.moveUnitsForward();
       }
     }
+
+    if (this.getIsDefeated()) return;
 
     if (this.isActivelyFighting) {
       if (this.isFireAtWill) {
@@ -711,6 +731,29 @@ export abstract class Organization {
     ) {
       this.deltaAssessFightDuration = 0;
 
+      //have we routed?
+      //call this once
+      if (this.shouldRout()) {
+        console.log(`${this.name} is routing...`);
+        this.isRouting = true;
+
+        //turn the other direction and scatter away
+        //maybe even drop the weapons
+        //TODO: functionize...
+        this.units.forEach((unitContainer) => {
+          const unit: Unit = unitContainer.getData("data");
+
+          //do not move player's units for them.
+          if (unit.getIsPlayerOwned()) return;
+
+          //face the opposite direction.
+          //TODO: face in random scatter directions behind
+          //TODO: deal with over 180+ (overflow)
+          this.orgFaceAngle += 180
+        });
+        return;
+      }
+
       //not fighting, do nothing
       if (!this.isActivelyFighting) {
         return;
@@ -750,7 +793,21 @@ export abstract class Organization {
         this.fillGapsAndCalculateFormup(); //this causes a mass disappearance???
         this.needsReform = false;
       }
+
     }
+  }
+
+  /**
+   * Check if routed.
+   */
+  private shouldRout(): boolean {
+    //TODO: make less basic.
+
+    if (this.mostUnitCount / 2 > this.units.size) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

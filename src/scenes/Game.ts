@@ -279,7 +279,7 @@ export class Game extends Scene {
   }
 
   /**
-   *
+   * The main game loop.
    * @param _ time
    * @param delta in milliseconds since last update
    */
@@ -385,6 +385,10 @@ export class Game extends Scene {
     this.camera.centerOn(playerX, playerY);
   }
 
+  /**
+   * Move the smokes and make them disappear over time.
+   * @param delta 
+   */
   private updateSmokes(delta: number): void {
     for (let smoke of this.smokeEntities) {
       let smokeData: Smoke = smoke.getData("data");
@@ -551,6 +555,10 @@ export class Game extends Scene {
     return volume;
   }
 
+  /**
+   * Move bullets and interact with other objects.
+   * @param delta 
+   */
   private updateBullets(delta: number) {
     this.friendlyBullets.getChildren().forEach((bulletSprite) => {
       const bullet: Bullet = bulletSprite.getData("data");
