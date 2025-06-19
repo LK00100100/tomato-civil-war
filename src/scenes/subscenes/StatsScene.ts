@@ -81,7 +81,7 @@ export default class StatsScene extends Scene {
 
     const playerHits = Stats.getStat("player-hits-enemy");
     const playerShots = Stats.getStat("player-shots-fired");
-    const playerAccuracy = ((playerHits / playerShots) * 100).toFixed(2) || 0.0;
+    const playerAccuracy = playerShots == 0 ? "N/A" : ((playerHits / playerShots) * 100).toFixed(2) || 0.0;
 
     txt += `\n\nPlayer Hits : ${playerHits} / ${playerShots} (${playerAccuracy}%)`;
     txt += `\nPlayer Misses: ${Stats.getStat("player-misses-enemy")}`;

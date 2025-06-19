@@ -2,6 +2,14 @@
  * Various Utils
  */
 export class Utils {
+
+  /**
+   * @returns either returns true or false
+   */
+  public static flipCoin() {
+    return Utils.rollDiceExclusive(1) == 0;
+  }
+
   /**
    * Roll a dice.
    * func(3) => 0, 1, or 2.

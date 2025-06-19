@@ -4,6 +4,7 @@ import { Unit } from "../unit/Unit";
 import { Coordinate } from "../util/Coordinate";
 import { Position } from "../util/Position";
 import { Settings } from "../util/Settings";
+import { Utils } from "../util/Utils";
 
 /**
  * Military Organization unit.
@@ -672,15 +673,18 @@ export abstract class Organization {
     });
 
     //move to direction-angle or move to form up
-    if (this.unitToMoveMap.size > 0) {
+    if (this.unitToMoveMap.size > 0 || this.isRouting) {
       this.moveIndividualUnits();
     } else {
-      if (this.isMovingForward || this.isRouting) {
+      if (this.isMovingForward) {
         this.moveUnitsForward();
       }
     }
 
-    if (this.getIsDefeated()) return;
+    //no more thinking
+    if (this.getIsDefeated()) {
+      return;
+    }
 
     if (this.isActivelyFighting) {
       if (this.isFireAtWill) {
@@ -740,17 +744,48 @@ export abstract class Organization {
         //turn the other direction and scatter away
         //maybe even drop the weapons
         //TODO: functionize...
-        this.units.forEach((unitContainer) => {
-          const unit: Unit = unitContainer.getData("data");
 
-          //do not move player's units for them.
-          if (unit.getIsPlayerOwned()) return;
+        //TODO: probably make a player, an org of one
+        //do not move player's units for them.
 
-          //face the opposite direction.
-          //TODO: face in random scatter directions behind
-          //TODO: deal with over 180+ (overflow)
-          this.orgFaceAngle += 180
-        });
+        //face the opposite direction. and scatter randomly.
+
+        for (let r = 0; r < this.unitRows.length; r++) {
+          for (let c = 0; c < this.unitRows[r].length; c++) {
+            const unit: Unit = this.unitRows[r][c]!;
+
+            if (unit == null) {
+              continue;
+            }
+
+            if (unit.getIsPlayerOwned()) { return };
+
+            const sign = Utils.flipCoin() ? -1 : 1;
+            const randomAngle = Utils.rollDiceExclusive(45) * sign;
+
+            const newFaceAngle = Phaser.Math.Angle.WrapDegrees(this.orgFaceAngle + 180 + randomAngle);
+            const angleToRowRad = newFaceAngle * Phaser.Math.DEG_TO_RAD;
+
+            const someFarDistance = 20000;
+            const xRowMagnitude =
+              Math.cos(angleToRowRad) * someFarDistance;
+            //prettier-ignore
+            const yRowMagnitude =
+              Math.sin(angleToRowRad) * someFarDistance;
+
+            const centerPosition = this.getCenterPosition();
+
+            unit.getUnitContainer().setAngle(newFaceAngle);
+
+            const newX = centerPosition.x + xRowMagnitude;
+            const newY = centerPosition.y + yRowMagnitude;
+
+            this.unitToMoveMap.set(unit, { x: newX, y: newY });
+          }
+        }
+
+        this.orgFaceAngle = Phaser.Math.Angle.WrapDegrees(this.orgFaceAngle + 180);
+
         return;
       }
 
@@ -803,7 +838,10 @@ export abstract class Organization {
   private shouldRout(): boolean {
     //TODO: make less basic.
 
-    if (this.mostUnitCount / 2 > this.units.size) {
+    //when this percentage of the force is remaining
+    const casualtyPercent = 10;
+
+    if (this.mostUnitCount / casualtyPercent > this.units.size) {
       return true;
     }
 
@@ -911,6 +949,8 @@ export abstract class Organization {
       //move entire unit
       //TODO: do tweening
       unitContainer.setAngle(this.orgFaceAngle);
+
+      //note: could cache calculations
 
       unitContainer.x += xMagnitude * unitSpeed;
       unitContainer.y += yMagnitude * unitSpeed;
