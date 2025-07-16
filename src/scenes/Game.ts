@@ -33,6 +33,7 @@ export class Game extends Scene {
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
 
+  //TODO: i think I call this "all attacking Melees". Just put in a set
   /**
    * A visible melee weapon here.
    * Move actively attacking into this.attackingMelees.
@@ -181,7 +182,7 @@ export class Game extends Scene {
     tomatoData.setIsPlayerOwned(true);
     const mySelectedItem = tomatoData.getSelectedItem();
     if (mySelectedItem instanceof Gun) {
-      mySelectedItem.setCooldownOverCallback(() => {
+      mySelectedItem.setCooldownIsOverCallback(() => {
         (this.audioGunClick as Phaser.Sound.HTML5AudioSound).setVolume(
           Settings.getCurrentVolume()
         );
@@ -359,6 +360,8 @@ export class Game extends Scene {
       //player shoots
       const tomatoData: Tomato = this.tomatoPlayer.getData("data");
       const event = tomatoData.doAction();
+
+      //TODO: could use a map of the items so we can have laser guns or even shotguns. (different bullet scheme)
       if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         this.shootBullet(tomatoData, Game.TEAM_A, event as GunFireEvent);
       }
@@ -367,7 +370,7 @@ export class Game extends Scene {
         event.name.startsWith("item-melee") &&
         event.name.endsWith("attack")
       ) {
-        this.useMelee(tomatoData, Game.TEAM_A, event as MeleeAttackEvent);
+        this.beginMelee(tomatoData, Game.TEAM_A, event as MeleeAttackEvent);
       }
     });
 
@@ -514,7 +517,13 @@ export class Game extends Scene {
     this.musketFireAudioPool.play(volume);
   }
 
-  public useMelee(
+  /**
+   * Start the melee movement and attack process.
+   * @param unit -
+   * @param teamNumber -
+   * @param meleeAttackEvent -
+   */
+  public beginMelee(
     unit: Unit,
     teamNumber: number,
     meleeAttackEvent: MeleeAttackEvent
@@ -523,9 +532,19 @@ export class Game extends Scene {
 
     const container = unit.getUnitContainer();
     const weaponSprite = container.getByName("weapon");
+    const weaponData: Melee = weaponSprite.getData("data");
 
-    this.nonAttackingMelees.remove(weaponSprite);
+    const killModeIsOffCallback = () => {
+      this.attackingMelees.remove(weaponSprite);
+    };
+
+    weaponData.setKillModeIsOffCallback(killModeIsOffCallback);
+
     this.attackingMelees.add(weaponSprite);
+
+    //when we are done attacking, put the weapon back
+
+    //cooldown call back
   }
 
   public playBugle(x: number, y: number) {

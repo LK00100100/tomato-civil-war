@@ -120,7 +120,7 @@ export abstract class Unit {
     if (this.items.length == this.getItemLimit()) return false;
 
     //add random shooting delay for guns per units (for aesthetics)
-    item.setCooldownOverCallback(() => this.resetRandomOffsetDelta());
+    item.setCooldownIsOverCallback(() => this.resetRandomOffsetDelta());
 
     this.items.push(item);
     return true;

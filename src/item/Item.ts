@@ -8,14 +8,14 @@ export abstract class Item {
   /**
    * Items generally have a cooldown after use.
    */
-  protected cooldownOverCallback: () => void;
+  protected cooldownIsOverCallback: () => void;
 
   protected abstract getCooldownDuration(): number;
 
   protected abstract getItemName(): string;
 
-  public setCooldownOverCallback(callback: () => void) {
-    this.cooldownOverCallback = callback;
+  public setCooldownIsOverCallback(callback: () => void) {
+    this.cooldownIsOverCallback = callback;
   }
 
   public abstract update(delta: number): void;

@@ -12,6 +12,8 @@ export class Pike extends Melee {
 
   private static readonly MAX_COOLDOWN_DURATION = 500;
 
+  private static readonly MIN_COOLDOWN_TURN_OFF_KILL_MODE = Pike.MAX_COOLDOWN_DURATION / 2;
+
   protected override getItemName(): string {
     return Pike.ITEM_NAME;
   }
@@ -27,9 +29,16 @@ export class Pike extends Melee {
   public override update(delta: number): void {
     super.update(delta);
 
+    //turn off kill
+    if(this.cooldownDuration >= Pike.MIN_COOLDOWN_TURN_OFF_KILL_MODE) {
+      this.isKillMode = false;
+      this.killModeIsOffCallback();
+    }
+
     //move melee weapon, swipe and stab
     //TODO:
     //angle
     //then back
   }
+
 }

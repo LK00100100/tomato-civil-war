@@ -5,11 +5,14 @@ export class Smoke {
   private duration: number;
 
   /**
-   * 1.0 = 100% opacity, not see through).
+   * 1.0 = 100% opacity, not see through.
    * 0.0 = 0% opacity, 100% see through.
    */
   private opacity: number;
 
+  /**
+   * When the duration hits this number, then make more see-through
+   */
   private static readonly REDUCE_OPACITY_DURATION = 150;
 
   constructor() {

@@ -12,6 +12,7 @@ export abstract class Gun extends Item {
 
   protected isReloading: boolean;
 
+  //TODO: rename to cooldownDuration, move to Item
   protected duration: number; //current reload duration
 
   //TODO: need to load bullets from bullet pouch
@@ -60,8 +61,8 @@ export abstract class Gun extends Item {
       this.isReloading = false;
       this.isLoaded = true;
 
-      if (this.cooldownOverCallback != null) {
-        this.cooldownOverCallback();
+      if (this.cooldownIsOverCallback != null) {
+        this.cooldownIsOverCallback();
       }
     }
   }

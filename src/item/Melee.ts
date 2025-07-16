@@ -8,17 +8,38 @@ import { ItemEvent } from "./ItemEvent";
  * Rapid cooldown.
  */
 export abstract class Melee extends Item {
+
+   /**
+   * This function is called when the kill mode is first turned off.
+   */
+  protected killModeIsOffCallback: () => void;
+  
   //TODO: move to item
+  /**
+   * When you use the item, when is the next time you can use it again.
+   */
   protected isOnCooldown: boolean;
 
   //TODO: move to item
-  protected duration: number; //current cooldown duration
+  protected cooldownDuration: number;
+
+  /**
+   * While on, this melee weapon does damage.
+   * Simulates swinging the weapon forward.
+   */
+  protected isKillMode: boolean;
+
+  public setKillModeIsOffCallback(callback: () => void) {
+    this.killModeIsOffCallback = callback;
+  }
+
+  //note: may have to stop the item from moving if you die.
 
   constructor() {
     super();
     this.isOnCooldown = false;
 
-    this.duration = 0;
+    this.cooldownDuration = 0;
   }
 
   public abstract calcDamage(): number;
@@ -26,29 +47,32 @@ export abstract class Melee extends Item {
   public override update(delta: number) {
     if (!this.isOnCooldown) return;
 
-    this.duration += delta;
+    this.cooldownDuration += delta;
 
     //cooldown done
-    if (this.duration >= this.getCooldownDuration()) {
-      this.duration = 0;
+    if (this.cooldownDuration >= this.getCooldownDuration()) {
+      this.cooldownDuration = 0;
       this.isOnCooldown = false;
+      this.isKillMode = false;
 
-      if (this.cooldownOverCallback != null) {
-        this.cooldownOverCallback();
+      if (this.cooldownIsOverCallback != null) {
+        this.cooldownIsOverCallback();
       }
     }
   }
 
   public useItem(): ItemEvent {
+    //TODO: pool
     //on cooldown
     if (this.isOnCooldown) {
       return {
-        name: this.getItemName() + "-cooldown",
+        name: this.getItemName() + "-cooldown", //TODO: could enum it
       } as MeleeAttackEvent;
     }
 
     //attacking
     this.isOnCooldown = true;
+    this.isKillMode = true;
 
     return {
       name: this.getItemName() + "-attack",
