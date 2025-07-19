@@ -33,7 +33,19 @@ export abstract class Melee extends Item {
     this.killModeIsOffCallback = callback;
   }
 
-  //note: may have to stop the item from moving if you die.
+  //TODO: may have to stop the item from moving if you die.
+
+  //TODO: pick up item, resets offset
+  /**
+   * The drawing offset x relative to the container.
+   * 0 angle is facing right.
+   */
+  protected offsetX;
+  /**
+   * The drawing offset y relative to the container
+   * 0 angle is facing right.
+   */
+  protected offsetY;
 
   constructor() {
     super();
@@ -41,12 +53,26 @@ export abstract class Melee extends Item {
     this.isKillMode = false;
 
     this.cooldownDuration = 0;
+
+    this.offsetX = 0;
+    this.offsetY = 0;
+  }
+
+  public getOffsetX() {
+    return this.offsetX;
+  }
+
+  public getOffsetY() {
+    return this.offsetY;
   }
 
   public abstract calcDamage(): number;
 
   public override update(delta: number) {
-    if (!this.isOnCooldown) return;
+    //item is idle
+    if (!this.isOnCooldown) {
+      return;
+    }
 
     this.cooldownDuration += delta;
 
@@ -56,7 +82,7 @@ export abstract class Melee extends Item {
       this.isOnCooldown = false;
       this.isKillMode = false;
 
-      if (this.cooldownIsOverCallback != null) {
+      if (this.cooldownIsOverCallback) {
         this.cooldownIsOverCallback();
       }
     }

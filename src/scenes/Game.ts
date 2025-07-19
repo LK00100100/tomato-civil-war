@@ -278,7 +278,7 @@ export class Game extends Scene {
 
   /**
    * The main game loop.
-   * @param _ time
+   * @param _ current time
    * @param delta in milliseconds since last update
    */
   update(_: any, delta: any) {
@@ -290,7 +290,7 @@ export class Game extends Scene {
 
     this.updateSmokes(delta);
     this.updateBullets(delta);
-    this.updateMelee(delta);
+    this.updateMeleeDrawing();
 
     this.checkCollisions();
 
@@ -527,10 +527,8 @@ export class Game extends Scene {
     _: number,
     __: MeleeAttackEvent
   ): void {
-    //TODO:
-
     const container = unit.getUnitContainer();
-    const weaponContainer = container.getByName("weapon");
+    const weaponContainer: Phaser.GameObjects.Container = container.getByName("weapon");
     const weaponHitbox = weaponContainer.getData("hitbox");
     const weaponData: Melee = weaponContainer.getData("data");
 
@@ -540,6 +538,7 @@ export class Game extends Scene {
     );
 
     this.attackingMeleesHitboxes.add(weaponHitbox);
+    this.attackingMeleeContainers.add(weaponContainer);
   }
 
   public playBugle(x: number, y: number) {
@@ -608,12 +607,17 @@ export class Game extends Scene {
   /**
    * Melee weapons which is attacking are moved forward and back.
    * The weapon data holds movement offset.
-   * @param delta
+   * For now, a Unit's selected item is given update(delta)
    */
-  private updateMelee(delta: number): void {
+  private updateMeleeDrawing(): void {
     this.attackingMeleeContainers.forEach((meleeContainer) => {
-      const meleeData = meleeContainer.getData("data");
-      meleeData.update(delta);
+      const meleeData: Melee = meleeContainer.getData("data");
+      const weaponOriginalOffsetX = meleeContainer.getData("offset_x")
+      const weaponOriginalOffsetY = meleeContainer.getData("offset_y")
+
+      //redraw moving melee containers with offset
+      meleeContainer.setX(weaponOriginalOffsetX + meleeData.getOffsetX());
+      meleeContainer.setY(weaponOriginalOffsetY + meleeData.getOffsetY());
     });
   }
 

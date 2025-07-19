@@ -29,6 +29,8 @@ export class Pike extends Melee {
   public override update(delta: number): void {
     super.update(delta);
 
+    this.updatePikeOffset(delta);
+
     //turn off kill
     if (this.cooldownDuration >= Pike.MIN_COOLDOWN_TURN_OFF_KILL_MODE) {
       this.isKillMode = false;
@@ -37,11 +39,24 @@ export class Pike extends Melee {
         this.killModeIsOffCallback();
       }
     }
+  }
 
-    //move melee weapon, swipe and stab
-    //TODO:
-    //angle
-    //then back
+  private updatePikeOffset(delta: number) {
+
+    if(this.cooldownDuration == 0) {
+      this.offsetX = 0;
+      return;
+    }
+
+    //move pike forward
+    if (this.cooldownDuration < Pike.MIN_COOLDOWN_TURN_OFF_KILL_MODE) {
+      this.offsetX += delta * 10;
+    }
+    //move pike backwards
+    else {
+      this.offsetX -= delta * 10;
+    }
+
   }
 
 }

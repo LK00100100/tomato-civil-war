@@ -9,6 +9,9 @@ export abstract class Unit {
   protected hp: number;
 
   protected items: Array<Item>;
+  /**
+   * Assume an item is always selected.
+   */
   protected selectedItem: number;
   protected speed: number;
   protected isPlayerOwned: boolean;

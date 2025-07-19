@@ -3,6 +3,7 @@ import { Pike } from "./Pike";
 import { Rifle } from "./Rifle";
 import { SmoothboreGun } from "./SmoothboreGun";
 
+//TODO: use enums instead of strings.
 /**
  * Makes weapons.
  * Remember that the weapon sprite relative to the Unit sprite, is set
@@ -32,17 +33,23 @@ export class WeaponFactory {
   public static makePikeSpriteWithData(game: Game): Phaser.GameObjects.Container {
     const pikeData = new Pike();
 
-    const pikeSprite = game.add.sprite(200, 100, "item-melee-pike");
+    //TODO: move these original offsets into the tomato class. this is really a standard tomato offset. also may ellipse
+    const offsetX = 200;
+    const offsetY = 100;
+
+    const pikeSprite = game.add.sprite(0, 0, "item-melee-pike");
     pikeSprite.setData("data", pikeData);
 
-    const circle = game.add.ellipse(500, 100, 25, 25, 0x00ff00, 0);
+    const circle = game.add.ellipse(300, 0, 40, 40, 0x00ff00, 0);
     const circularHitbox = game.physics.add.existing(circle);
     circularHitbox.setData("data", pikeData);
 
-    const pikeContainer = game.add.container();
+    const pikeContainer = game.add.container(offsetX, offsetY);
     pikeContainer.setData("sprite", pikeSprite);
     pikeContainer.setData("hitbox", circularHitbox);
     pikeContainer.setData("data", pikeData);
+    pikeContainer.setData("offset_x", offsetX);
+    pikeContainer.setData("offset_y", offsetY);
     pikeContainer.add(pikeSprite);
     pikeContainer.add(circularHitbox);
 
