@@ -33,17 +33,15 @@ export class Game extends Scene {
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
 
-  //TODO: i think I call this "all attacking Melees". Just put in a set
-  /**
-   * A visible melee weapon here.
-   * Move actively attacking into this.attackingMelees.
-   */
-  public nonAttackingMelees: Phaser.Physics.Arcade.Group;
   /**
    * Melee weapons that are actively dangerous. For collision checking.
-   * When done attacking, move to this.nonAttackingMelees.
    */
-  public attackingMelees: Phaser.Physics.Arcade.Group;
+  public attackingMeleesHitboxes: Phaser.Physics.Arcade.Group;
+
+  /**
+   * Melee Containers here will be have update() called for their data.
+   */
+  public attackingMeleeContainers: Set<Phaser.GameObjects.Container>;
 
   /**
    * BulletTrail line -> BulletTrail data
@@ -128,8 +126,8 @@ export class Game extends Scene {
      */
     this.friendlyBullets = this.physics.add.group();
     this.enemyBullets = this.physics.add.group();
-    this.nonAttackingMelees = this.physics.add.group();
-    this.attackingMelees = this.physics.add.group();
+    this.attackingMeleesHitboxes = this.physics.add.group();
+    this.attackingMeleeContainers = new Set();
 
     this.smokeEntities = new Set();
     this.bulletTrailEntities = new Map();
@@ -169,14 +167,13 @@ export class Game extends Scene {
     /**
      * Make player tomato
      */
-    const pikeSprite = WeaponFactory.makePikeSpriteWithData(this);
-    this.nonAttackingMelees.add(pikeSprite);
+    const pikeContainer = WeaponFactory.makePikeSpriteWithData(this);
 
     //TODO: add also a rifle then pike
     this.tomatoPlayer = UnitFactory.createTomato(
       this,
       //WeaponFactory.makeRifleSpriteWithData(this)
-      pikeSprite
+      pikeContainer
     );
     const tomatoData: Unit = this.tomatoPlayer.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
@@ -361,6 +358,8 @@ export class Game extends Scene {
       const tomatoData: Tomato = this.tomatoPlayer.getData("data");
       const event = tomatoData.doAction();
 
+      //TODO: merge this with army doAction() code later.
+
       //TODO: could use a map of the items so we can have laser guns or even shotguns. (different bullet scheme)
       if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         this.shootBullet(tomatoData, Game.TEAM_A, event as GunFireEvent);
@@ -525,26 +524,22 @@ export class Game extends Scene {
    */
   public beginMelee(
     unit: Unit,
-    teamNumber: number,
-    meleeAttackEvent: MeleeAttackEvent
+    _: number,
+    __: MeleeAttackEvent
   ): void {
     //TODO:
 
     const container = unit.getUnitContainer();
-    const weaponSprite = container.getByName("weapon");
-    const weaponData: Melee = weaponSprite.getData("data");
+    const weaponContainer = container.getByName("weapon");
+    const weaponHitbox = weaponContainer.getData("hitbox");
+    const weaponData: Melee = weaponContainer.getData("data");
 
-    const killModeIsOffCallback = () => {
-      this.attackingMelees.remove(weaponSprite);
-    };
+    weaponData.setKillModeIsOffCallback(() => this.attackingMeleesHitboxes.remove(weaponHitbox));
+    weaponData.setCooldownIsOverCallback(() =>
+      this.attackingMeleeContainers.delete(container)
+    );
 
-    weaponData.setKillModeIsOffCallback(killModeIsOffCallback);
-
-    this.attackingMelees.add(weaponSprite);
-
-    //when we are done attacking, put the weapon back
-
-    //cooldown call back
+    this.attackingMeleesHitboxes.add(weaponHitbox);
   }
 
   public playBugle(x: number, y: number) {
@@ -612,15 +607,13 @@ export class Game extends Scene {
 
   /**
    * Melee weapons which is attacking are moved forward and back.
-   * The weapon data dictates movement.
+   * The weapon data holds movement offset.
    * @param delta
    */
   private updateMelee(delta: number): void {
-    this.attackingMelees.getChildren().forEach((meleeSprite) => {
-      const meleeData = meleeSprite.getData("data");
+    this.attackingMeleeContainers.forEach((meleeContainer) => {
+      const meleeData = meleeContainer.getData("data");
       meleeData.update(delta);
-
-      //TODO:
     });
   }
 
@@ -649,7 +642,7 @@ export class Game extends Scene {
     //check melee hits any units
     this.physics.world.overlap(
       this.friendlyArmy.getUnitHitSprites(),
-      this.attackingMelees,
+      this.attackingMeleesHitboxes,
       this.collideUnitsWithMelee.bind(this),
       undefined,
       this
@@ -657,7 +650,7 @@ export class Game extends Scene {
 
     this.physics.world.overlap(
       this.enemyArmy.getUnitHitSprites(),
-      this.attackingMelees,
+      this.attackingMeleesHitboxes,
       this.collideUnitsWithMelee.bind(this),
       undefined,
       this

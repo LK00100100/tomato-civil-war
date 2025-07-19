@@ -82,6 +82,7 @@ export abstract class Unit {
     return this.isPlayerOwned;
   }
 
+  //TODO: rename to sprite
   /**
    *
    * @param container has various sprites as one. "body" is the hit box.

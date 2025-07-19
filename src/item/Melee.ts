@@ -38,6 +38,7 @@ export abstract class Melee extends Item {
   constructor() {
     super();
     this.isOnCooldown = false;
+    this.isKillMode = false;
 
     this.cooldownDuration = 0;
   }

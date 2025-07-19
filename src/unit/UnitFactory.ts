@@ -7,39 +7,41 @@ export class UnitFactory {
   /**
    * Creates and draws a tomato (container).
    * @param game game to draw on
-   * @param startingWeaponSprite starting weapon sprite to draw and add to the Tomato.
+   * @param startingWeaponSprCon starting weapon sprite to draw and add to the Tomato. or container.
    * @returns A container with a tomato (physics sprite) and some starter items.
    */
   public static createTomato(
     game: Game,
-    startingWeaponSprite?: Phaser.GameObjects.Sprite | undefined
+    startingWeaponSprCon?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container | undefined
   ): Phaser.GameObjects.Container {
-    const tomatoContainer = game.add.container(0, 0);
-    const tomatoData = new Tomato();
 
-    if (startingWeaponSprite == undefined) {
-      startingWeaponSprite =
+    if (startingWeaponSprCon == undefined) {
+      startingWeaponSprCon =
         WeaponFactory.makeSmoothboreGunSpriteWithData(game);
     }
 
     //TODO: enums
-    startingWeaponSprite.setName("weapon");
-    const gunData = startingWeaponSprite.getData("data");
+    startingWeaponSprCon.setName("weapon");
+    const weaponData = startingWeaponSprCon.getData("data");
 
     const bulletPouchData = new BulletPouch();
-    tomatoData.addItem(gunData);
+
+    const tomatoData = new Tomato();
+    tomatoData.addItem(weaponData);
     tomatoData.addItem(bulletPouchData);
 
     const tomatoSprite = game.physics.add.sprite(0, 0, "unit-tomato");
     tomatoSprite.setData("data", tomatoData);
+    tomatoSprite.setName("body");
 
     //TODO: if not selected, hide gun?
 
-    tomatoSprite.setName("body");
+    //TODO: rename "body" to "sprite"
 
-    tomatoContainer.setData("data", tomatoData);
+    const tomatoContainer = game.add.container();
+    tomatoContainer.setData("data", tomatoData); //redundant since sprite has data, but makes my life easier.
     tomatoContainer.add(tomatoSprite);
-    tomatoContainer.add(startingWeaponSprite);
+    tomatoContainer.add(startingWeaponSprCon);
 
     tomatoData.setUnitContainer(tomatoContainer);
 

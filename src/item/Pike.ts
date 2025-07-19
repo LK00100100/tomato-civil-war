@@ -30,9 +30,12 @@ export class Pike extends Melee {
     super.update(delta);
 
     //turn off kill
-    if(this.cooldownDuration >= Pike.MIN_COOLDOWN_TURN_OFF_KILL_MODE) {
+    if (this.cooldownDuration >= Pike.MIN_COOLDOWN_TURN_OFF_KILL_MODE) {
       this.isKillMode = false;
-      this.killModeIsOffCallback();
+
+      if (this.killModeIsOffCallback) {
+        this.killModeIsOffCallback();
+      }
     }
 
     //move melee weapon, swipe and stab
