@@ -13,12 +13,16 @@ export class Bullet {
   private static readonly MAX_DURATION = 4000;
   public static readonly BULLET_SPEED = 6000;
 
-  constructor(damage: number) {
+  constructor(damage?: number) {
     this.duration = 0;
 
-    this.damage = damage;
+    this.damage = damage ?? 0;
 
     this.isPlayerOwned = false;
+  }
+
+   public setDamage(damage: number) {
+    this.damage = damage;
   }
 
   /**

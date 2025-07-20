@@ -29,4 +29,7 @@ export abstract class Item {
   public useItemSecondary(): ItemEvent {
     return NoEvent.getSingleton();
   }
+
+  //TODO: implement when you die. maybe reset variables and use callbacks
+  //public abstract dropItem(): void;
 }

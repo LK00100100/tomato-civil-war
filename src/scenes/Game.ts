@@ -18,6 +18,7 @@ import StatsScene from "./subscenes/StatsScene";
 import BattleInfoScene from "./subscenes/BattleInfoScene";
 import { Melee } from "../item/Melee";
 import { MeleeAttackEvent } from "../item_event/MeleeAttackEvent";
+import { BulletPool } from "../pool/BulletPool";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -27,6 +28,7 @@ export class Game extends Scene {
   private tomatoPlayer: Phaser.GameObjects.Container;
 
   public readonly MOVE_SPEED = 25;
+  private readonly IS_DEBUG_MODE = false;
 
   //TODO: one set of bullets. friendly fire
   //TODO: test with regular group with regular sprites
@@ -53,10 +55,13 @@ export class Game extends Scene {
   public static readonly TEAM_A = 1;
   public static readonly TEAM_B = 2;
 
-  //TODO: bullet pool
-
   private friendlyArmy: Army;
   private enemyArmy: Army;
+
+  /**
+   * Entity Enums
+   */
+  private bulletPool: BulletPool;
 
   /**
    * controls
@@ -102,12 +107,30 @@ export class Game extends Scene {
   private statsScene: StatsScene;
   private battleInfoScene: BattleInfoScene;
 
+  /**
+   * The amount of time (ms) the game over has been achieved.
+   */
+  private gameOverDuration: number;
+
+  /**
+   * Wait for these many seconds until actually declaring game over.
+   */
+  private readonly GAME_OVER_WAIT_MAX = 5000;
+
+  /**
+   * If this is on, stop update()
+   */
+  private isStopUpdate: boolean;
+
   constructor() {
     super("Game");
   }
 
   create() {
-    Settings.setIsDebugMode(true);
+    Settings.setIsDebugMode(this.IS_DEBUG_MODE);
+
+    this.gameOverDuration = 0;
+    this.isStopUpdate = false;
 
     /**
      * camera junk
@@ -120,6 +143,15 @@ export class Game extends Scene {
     this.background = this.add.image(0, 0, "background");
     this.background.setScale(50);
     this.background.setAlpha(0.1);
+
+    /**
+     * Entity Pools
+     */
+    this.bulletPool = new BulletPool(this);
+    for (let b = 0; b < 200; b++) {
+      const bullet = this.bulletPool.getBullet();
+      this.bulletPool.addAndResetBullet(bullet);
+    }
 
     /**
      * entities
@@ -284,7 +316,7 @@ export class Game extends Scene {
   update(_: any, delta: any) {
     //note: if people die first, then remove and stop processing them.
 
-    if (this.isGameOver()) {
+    if (this.isStopUpdate) {
       return;
     }
 
@@ -301,6 +333,14 @@ export class Game extends Scene {
 
     //call only once
     if (this.isGameOver()) {
+      //let the game wait a bit after game over before stopping the game
+      if (this.gameOverDuration < this.GAME_OVER_WAIT_MAX) {
+        this.gameOverDuration += delta;
+        return;
+      }
+
+      this.isStopUpdate = true;
+
       console.log("game is over");
       Stats.setStat(
         "friendly-army-units-alive",
@@ -442,26 +482,23 @@ export class Game extends Scene {
     }
   }
 
-  //TODO: maybe put teamn umber in unit? too much memory?
+  //TODO: maybe put team number in unit? too much memory?
   public shootBullet(
     unit: Unit,
     teamNumber: number,
     gunFireEvent: GunFireEvent
   ): void {
     const unitContainer = unit.getUnitContainer();
-    //const weaponSprite: Phaser.GameObjects.Sprite = unitContainer.getByName("weapon");
 
-    const bulletSprite = this.physics.add.sprite(
-      unitContainer.x,
-      unitContainer.y,
-      "entity-bullet"
-    );
+    const bulletSprite = this.bulletPool.getBullet(gunFireEvent.damage);
+    bulletSprite.x = unitContainer.x;
+    bulletSprite.y = unitContainer.y;
 
-    const bulletData = new Bullet(gunFireEvent.damage);
+    const bulletData = bulletSprite.getData("data");
+
     if (unit.getIsPlayerOwned()) {
       bulletData.setIsPlayerOwned(true);
     }
-    bulletSprite.setData("data", bulletData);
 
     //note: when adding to group, velocity will be set to 0.
     if (teamNumber == Game.TEAM_A) {
@@ -510,6 +547,8 @@ export class Game extends Scene {
     this.graphics.strokeLineShape(bulletTrail);
     Phaser.Geom.Line.Rotate(bulletTrail, bulletSprite.rotation);
     this.bulletTrailEntities.set(bulletTrail, new BulletTrail(bulletSprite));
+
+    //TODO: bullet trail pool
 
     // make loud noises
     const volume = this.getVolumeFromPlayer(unitContainer.x, unitContainer.y);
@@ -574,12 +613,13 @@ export class Game extends Scene {
    */
   private updateBullets(delta: number) {
     this.friendlyBullets.getChildren().forEach((bulletSprite) => {
+      const physBulletSprite = bulletSprite as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
       const bullet: Bullet = bulletSprite.getData("data");
 
       bullet.update(delta);
 
       if (bullet.isExpired()) {
-        bulletSprite.destroy();
+        this.bulletPool.addAndResetBullet(physBulletSprite);
         this.friendlyBullets.remove(bulletSprite);
         Stats.incrementStat("friendly-misses");
 
@@ -590,12 +630,13 @@ export class Game extends Scene {
     });
 
     this.enemyBullets.getChildren().forEach((bulletSprite) => {
+      const physBulletSprite = bulletSprite as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
       const bullet: Bullet = bulletSprite.getData("data");
 
       bullet.update(delta);
 
       if (bullet.isExpired()) {
-        bulletSprite.destroy();
+        this.bulletPool.addAndResetBullet(physBulletSprite);
         this.enemyBullets.remove(bulletSprite);
         Stats.incrementStat("enemy-misses");
       }

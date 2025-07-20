@@ -68,6 +68,6 @@ export class BulletTrail {
   }
 
   public isExpired(): boolean {
-    return !this.bulletSprite.active;
+    return !this.bulletSprite.visible;
   }
 }
