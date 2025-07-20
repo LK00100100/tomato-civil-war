@@ -8,7 +8,7 @@ import { Game } from "../scenes/Game";
 export class SmokePool {
 
   /**
-   * Bullets added here are reset and need to be populated with damage.
+   * Smoke added here are reset and invisible.
    */
   private smokePool: Phaser.GameObjects.Sprite[];
 
@@ -30,9 +30,6 @@ export class SmokePool {
 
     const smokeSprite = this.smokePool.pop()!;
     smokeSprite.setVisible(true);
-
-    const smokeData: Smoke = smokeSprite.getData("data");
-    smokeData.reset();
 
     return smokeSprite;
   }

@@ -15,8 +15,23 @@ export class BulletTrail {
    */
   private static readonly GROW_DURATION = 500;
 
-  constructor(bulletSprite: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
+  constructor(bulletSprite?: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
+    this.reset();
+
+    this.setBulletSpriteAndCopyAttributes(bulletSprite);
+  }
+
+  /**
+   * Reset to a new constructor setting.
+   */
+  public reset(): void {
     this.duration = 0;
+  }
+
+  public setBulletSpriteAndCopyAttributes(bulletSprite?: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {
+    if(!bulletSprite) {
+      return;
+    }
 
     this.bulletSprite = bulletSprite;
     this.xVelocity = bulletSprite.body.velocity.x;
@@ -46,13 +61,6 @@ export class BulletTrail {
   public getEndY() {
     //prettier-ignore
     return this.bulletSprite.y - (this.yVelocity / 2);
-  }
-
-  /**
-   * Reset to a new constructor setting.
-   */
-  public reset(): void {
-    this.duration = 0;
   }
 
   /**

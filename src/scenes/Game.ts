@@ -20,6 +20,7 @@ import { Melee } from "../item/Melee";
 import { MeleeAttackEvent } from "../item_event/MeleeAttackEvent";
 import { BulletPool } from "../pool/BulletPool";
 import { SmokePool } from "../pool/SmokePool";
+import { BulletTrailPool } from "../pool/BulletTrailPool";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -48,6 +49,7 @@ export class Game extends Scene {
 
   /**
    * BulletTrail line -> BulletTrail data
+   * Things in here are drawn.
    */
   public bulletTrailEntities: Map<Phaser.Geom.Line, BulletTrail>;
   public smokeEntities: Set<Phaser.GameObjects.Sprite>;
@@ -63,6 +65,7 @@ export class Game extends Scene {
    * Entity Enums
    */
   private bulletPool: BulletPool;
+  private bulletTrailPool: BulletTrailPool;
   private smokePool: SmokePool;
 
   /**
@@ -150,6 +153,7 @@ export class Game extends Scene {
      * Entity Pools
      */
     this.bulletPool = new BulletPool(this);
+    this.bulletTrailPool = new BulletTrailPool();
     this.smokePool = new SmokePool(this);
 
     //pre-create entities
@@ -159,9 +163,12 @@ export class Game extends Scene {
     for (let b = 0; b < numTomato; b++) {
       const bullet = this.bulletPool.getBullet();
       this.bulletPool.addAndResetBullet(bullet);
+
+      const bulletTrailTuple = this.bulletTrailPool.getBulletTrail();
+      this.bulletTrailPool.addAndResetBulletTrail(bulletTrailTuple.bulletTrail, bulletTrailTuple.bulletTrailData);
     }
 
-    for(let s = 0; s < numTomato * 2; s++) {
+    for (let s = 0; s < numTomato * 2; s++) {
       const smoke = this.smokePool.getSmoke();
       this.smokePool.addAndResetSmoke(smoke);
     }
@@ -471,13 +478,13 @@ export class Game extends Scene {
     this.graphics.setAlpha(0.4); //all bullet trails
     this.graphics.lineStyle(25, 0xffffff); //white
 
-    //TODO: use pool
     for (const [bulletTrail, bulletTrailData] of this.bulletTrailEntities) {
       bulletTrailData.update(delta);
 
       if (bulletTrailData.isExpired()) {
         this.bulletTrailEntities.delete(bulletTrail);
-        //TODO: use pool
+
+        this.bulletTrailPool.addAndResetBulletTrail(bulletTrail, bulletTrailData);
         continue;
       }
 
@@ -544,19 +551,17 @@ export class Game extends Scene {
 
     this.smokeEntities.add(smokeSprite);
 
-    //TODO: make entity pool
     //make bullet trail
-    const bulletTrail = new Phaser.Geom.Line(
-      bulletSprite.x,
-      bulletSprite.y,
-      bulletSprite.x,
-      bulletSprite.y
-    );
+    const bulletTrailTuple = this.bulletTrailPool.getBulletTrail();
+    const bulletTrail = bulletTrailTuple.bulletTrail;
+    bulletTrail.x1 = bulletSprite.x;
+    bulletTrail.y1 = bulletSprite.y;
+    bulletTrail.x2 = bulletSprite.x;
+    bulletTrail.y2 = bulletSprite.y;
+    
     this.graphics.strokeLineShape(bulletTrail);
     Phaser.Geom.Line.Rotate(bulletTrail, bulletSprite.rotation);
     this.bulletTrailEntities.set(bulletTrail, new BulletTrail(bulletSprite));
-
-    //TODO: bullet trail pool
 
     // make loud noises
     const volume = this.getVolumeFromPlayer(unitContainer.x, unitContainer.y);

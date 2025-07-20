@@ -8,7 +8,7 @@ import { Game } from "../scenes/Game";
 export class BulletPool {
 
   /**
-   * Bullets added here are reset and need to be populated with damage.
+   * Bullets added here are reset, invisible, and need to be populated with damage.
    */
   private bulletPool: Array<Phaser.Types.Physics.Arcade.SpriteWithDynamicBody>;
 
