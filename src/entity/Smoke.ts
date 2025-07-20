@@ -16,6 +16,10 @@ export class Smoke {
   private static readonly REDUCE_OPACITY_DURATION = 150;
 
   constructor() {
+    this.reset();
+  }
+
+  public reset() {
     this.duration = 0;
 
     this.opacity = 1.0;

@@ -14,11 +14,9 @@ export class Bullet {
   public static readonly BULLET_SPEED = 6000;
 
   constructor(damage?: number) {
-    this.duration = 0;
-
     this.damage = damage ?? 0;
 
-    this.isPlayerOwned = false;
+    this.reset();
   }
 
    public setDamage(damage: number) {

@@ -39,7 +39,7 @@ export class BulletPool {
   }
 
   /**
-   * Bullets are stored, reset, and hidden.
+   * Bullets are stored, reset, and invisible.
    * @param bulletSprite -
    */
   public addAndResetBullet(bulletSprite: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody) {

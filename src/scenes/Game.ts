@@ -19,6 +19,7 @@ import BattleInfoScene from "./subscenes/BattleInfoScene";
 import { Melee } from "../item/Melee";
 import { MeleeAttackEvent } from "../item_event/MeleeAttackEvent";
 import { BulletPool } from "../pool/BulletPool";
+import { SmokePool } from "../pool/SmokePool";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -62,6 +63,7 @@ export class Game extends Scene {
    * Entity Enums
    */
   private bulletPool: BulletPool;
+  private smokePool: SmokePool;
 
   /**
    * controls
@@ -148,9 +150,20 @@ export class Game extends Scene {
      * Entity Pools
      */
     this.bulletPool = new BulletPool(this);
-    for (let b = 0; b < 200; b++) {
+    this.smokePool = new SmokePool(this);
+
+    //pre-create entities
+    //should be at least to amount of people with guns.
+    const numTomato = 200;
+
+    for (let b = 0; b < numTomato; b++) {
       const bullet = this.bulletPool.getBullet();
       this.bulletPool.addAndResetBullet(bullet);
+    }
+
+    for(let s = 0; s < numTomato * 2; s++) {
+      const smoke = this.smokePool.getSmoke();
+      this.smokePool.addAndResetSmoke(smoke);
     }
 
     /**
@@ -269,7 +282,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 2;
+    const numCompanies = 4;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -293,7 +306,7 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 2;
+    const numCompanies = 4;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);
@@ -432,19 +445,20 @@ export class Game extends Scene {
    * @param delta 
    */
   private updateSmokes(delta: number): void {
-    for (let smoke of this.smokeEntities) {
-      let smokeData: Smoke = smoke.getData("data");
+    for (let smokeSprite of this.smokeEntities) {
+      let smokeData: Smoke = smokeSprite.getData("data");
       smokeData.update(delta);
 
       if (smokeData.isExpired()) {
-        this.smokeEntities.delete(smoke);
-        smoke.destroy(); //TODO: use pool
+        this.smokeEntities.delete(smokeSprite);
+
+        this.smokePool.addAndResetSmoke(smokeSprite);
       }
 
       //update apperance
-      smoke.x += this.windMagnitudeX;
-      smoke.y += this.windMagnitudeY;
-      smoke.setAlpha(smokeData.getOpacity());
+      smokeSprite.x += this.windMagnitudeX;
+      smokeSprite.y += this.windMagnitudeY;
+      smokeSprite.setAlpha(smokeData.getOpacity());
     }
   }
 
@@ -521,20 +535,14 @@ export class Game extends Scene {
       bulletSprite.body.velocity
     );
 
-    //TODO: smoke pool
     //make smoke
-    const smokeData = new Smoke();
+    const smokeSprite = this.smokePool.getSmoke();
+    smokeSprite.x = unitContainer.x;
+    smokeSprite.y = unitContainer.y;
+    smokeSprite.setScale(3);
+    smokeSprite.setAngle(unitContainer.angle);
 
-    const smoke = this.add.sprite(
-      unitContainer.x,
-      unitContainer.y,
-      "entity-smoke"
-    );
-    smoke.setScale(3);
-    smoke.setData("data", smokeData);
-    smoke.setAngle(unitContainer.angle);
-
-    this.smokeEntities.add(smoke);
+    this.smokeEntities.add(smokeSprite);
 
     //TODO: make entity pool
     //make bullet trail
