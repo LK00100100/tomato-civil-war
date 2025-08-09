@@ -219,13 +219,15 @@ export class Game extends Scene {
     /**
      * Make player tomato
      */
-    const pikeContainer = WeaponFactory.makePikeSpriteWithData(this);
+    //const pikeContainer = WeaponFactory.makePikeSpriteWithData(this);
+    const standardContainer = WeaponFactory.makeStandardSpriteWithData(this, "america");
 
     //TODO: add also a rifle then pike
     this.tomatoPlayer = UnitFactory.createTomato(
       this,
       //WeaponFactory.makeRifleSpriteWithData(this)
-      pikeContainer
+      //pikeContainer
+      standardContainer
     );
     const tomatoData: Unit = this.tomatoPlayer.getData("data") as Unit;
     tomatoData.setIsPlayerOwned(true);
@@ -239,6 +241,8 @@ export class Game extends Scene {
       });
     }
 
+    //TODO: organization shouldn't have the player. should be generic for all blobs of people.
+    //TODO: make a playerOrganization
     const yourCompany = new Company(this, "A-company-player");
     yourCompany.addUnit(tomatoData);
 
@@ -289,7 +293,7 @@ export class Game extends Scene {
   }
 
   private makeEnemies(numEnemies: number) {
-    const numCompanies = 4;
+    const numCompanies = 3;
     for (let c = 0; c < numCompanies; c++) {
       const name = "B-company-" + c;
       const company = new Company(this, name);
@@ -313,13 +317,24 @@ export class Game extends Scene {
   }
 
   private makeFriends(numUnits: number) {
-    const numCompanies = 4;
+    const numCompanies = 3;
     for (let c = 0; c < numCompanies; c++) {
       const name = "A-company-" + c;
       const company = new Company(this, name);
 
+      let standardContainer = WeaponFactory.makeStandardSpriteWithData(this, "america");
+
       for (let i = 0; i < numUnits; i++) {
-        const tomato = UnitFactory.createTomato(this);
+        
+        let tomato;
+        //add the standard
+        if(i == numUnits - 1) {
+          tomato = UnitFactory.createTomato(this, standardContainer);  
+        }
+        else {
+          tomato = UnitFactory.createTomato(this);
+        }
+
         company.addUnit(tomato.getData("data"));
       }
       this.friendlyArmy.addOrganization(company);

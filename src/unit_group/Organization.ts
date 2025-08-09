@@ -1,3 +1,5 @@
+import { Item } from "../item/Item";
+import { ItemOrganizationMoraleBonus } from "../item/ItemOrganizationMoraleBonus";
 import { GunFireEvent } from "../item_event/GunFireEvent";
 import { Game } from "../scenes/Game";
 import { Unit } from "../unit/Unit";
@@ -69,12 +71,18 @@ export abstract class Organization {
    * The most amount of units added to this organization at any time.
    * If you add 10 units, the number is 10. If 10 units die, the number is still 10.
    */
-  private mostUnitCount: number;
+  private originalUnitCount: number;
 
   /**
    * If true, the unit is routing (running away).
    */
   private isRouting: boolean;
+
+  /**
+   * In terms of percent of forces.
+   * Used in the routing check.
+   */
+  private moraleBonus: number;
 
   /**
    * If the organization has no more units, morale is broken, or etc.
@@ -140,9 +148,10 @@ export abstract class Organization {
     this.needsReform = false;
     this.isDefeated = false;
 
-    this.mostUnitCount = 0;
+    this.originalUnitCount = 0;
 
     this.isRouting = false;
+    this.moraleBonus = 0;
   }
 
   public getIsDefeated() {
@@ -182,6 +191,13 @@ export abstract class Organization {
     return this.units;
   }
 
+  //TODO: move
+  //TODO: I think I can do it in a generic way
+  hasItemOrganizationMoraleBonus(obj: Item) {
+    const obj2 = obj as unknown as ItemOrganizationMoraleBonus;
+    return obj2.getOrganizationMoraleBonus != null;
+  }
+
   /**
    * Adds to this Organization. Doesn't add to row.
    *
@@ -191,9 +207,22 @@ export abstract class Organization {
   public addUnit(unit: Unit): void {
     this.units.add(unit.getUnitContainer());
 
-    this.mostUnitCount++;
+    //TODO: functionize
+    //add item effects
+    const selectedItem = unit.getSelectedItem();
+      if (this.hasItemOrganizationMoraleBonus(selectedItem)) {
+        const item = selectedItem as unknown as ItemOrganizationMoraleBonus;
+        this.moraleBonus += item.getOrganizationMoraleBonus();
+      }
+
+    this.originalUnitCount++;
   }
 
+  /**
+   * Removes a unit from this organization.
+   * @param unit 
+   * @returns 
+   */
   public removeUnit(unit: Unit): void {
     //all metadata already deleted
     if (!this.unitRowMap.has(unit)) return;
@@ -212,6 +241,14 @@ export abstract class Organization {
     if (this.units.size == 0) {
       this.isDefeated = true;
     }
+    
+    //TODO: functionize
+    //add item effects
+    const selectedItem = unit.getSelectedItem();
+      if (this.hasItemOrganizationMoraleBonus(selectedItem)) {
+        const item = selectedItem as unknown as ItemOrganizationMoraleBonus;
+        this.moraleBonus -= item.getOrganizationMoraleBonus();
+      }
   }
 
   //TODO: set unit tests
@@ -839,9 +876,10 @@ export abstract class Organization {
     //TODO: make less basic.
 
     //when this percentage of the force is remaining
-    const casualtyPercent = 10;
+    const casualtyPercent = 15 - this.moraleBonus;  //can be negative
 
-    if (this.mostUnitCount / casualtyPercent > this.units.size) {
+    //ex: 10% of original forces <= casualty percentage of 10%, then flee
+    if (this.units.size / this.originalUnitCount * 100 <= casualtyPercent) {
       return true;
     }
 

@@ -47,6 +47,7 @@ export default class StatsScene extends Scene {
     let txt = "";
     //TODO: use enum for stats keys
 
+    //TODO: fix this. routing leaves some alive
     if (Stats.getStat("friendly-army-units-alive") == 0) {
       txt = "Battle Lost";
     } else {

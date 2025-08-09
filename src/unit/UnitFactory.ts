@@ -15,6 +15,7 @@ export class UnitFactory {
     startingWeaponSprCon?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container | undefined
   ): Phaser.GameObjects.Container {
 
+    //TODO: should really remove this and just "create tomato"
     if (startingWeaponSprCon == undefined) {
       startingWeaponSprCon =
         WeaponFactory.makeSmoothboreGunSpriteWithData(game);

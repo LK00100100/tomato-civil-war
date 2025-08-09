@@ -14,7 +14,7 @@ export class Pike extends Melee {
 
   private static readonly MIN_COOLDOWN_TURN_OFF_KILL_MODE = Pike.MAX_COOLDOWN_DURATION / 2;
 
-  protected override getItemName(): string {
+  public override getItemName(): string {
     return Pike.ITEM_NAME;
   }
 

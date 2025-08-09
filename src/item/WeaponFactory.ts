@@ -2,7 +2,9 @@ import { Game } from "../scenes/Game";
 import { Pike } from "./Pike";
 import { Rifle } from "./Rifle";
 import { SmoothboreGun } from "./SmoothboreGun";
+import { Standard } from "./Standard";
 
+//TODO: split this up into sub types of factory. like melee and gun
 //TODO: use enums instead of strings.
 /**
  * Makes weapons.
@@ -40,7 +42,7 @@ export class WeaponFactory {
     const pikeSprite = game.add.sprite(0, 0, "item-melee-pike");
     pikeSprite.setData("data", pikeData);
 
-    const circle = game.add.ellipse(300, 0, 40, 40, 0x00ff00, 0);
+    const circle = game.add.ellipse(300, 0, 50, 50, 0x00ff00, 0);
     const circularHitbox = game.physics.add.existing(circle);
     circularHitbox.setData("data", pikeData);
 
@@ -51,6 +53,33 @@ export class WeaponFactory {
     pikeContainer.setData("offset_x", offsetX);
     pikeContainer.setData("offset_y", offsetY);
     pikeContainer.add(pikeSprite);
+    pikeContainer.add(circularHitbox);
+
+    return pikeContainer;
+  }
+
+  public static makeStandardSpriteWithData(game: Game, standardType :string): Phaser.GameObjects.Container {
+    //TODO: enum and 
+    const standardData = new Standard(standardType);
+
+    //TODO: move these original offsets into the tomato class. this is really a standard tomato offset. also may ellipse
+    const offsetX = 200;
+    const offsetY = 100;
+
+    const sprite = game.add.sprite(0, 0, standardData.getItemName());
+    sprite.setData("data", standardData);
+
+    const circle = game.add.ellipse(300, 0, 50, 50, 0x00ff00, 0);
+    const circularHitbox = game.physics.add.existing(circle);
+    circularHitbox.setData("data", standardData);
+
+    const pikeContainer = game.add.container(offsetX, offsetY);
+    pikeContainer.setData("sprite", sprite);
+    pikeContainer.setData("hitbox", circularHitbox);
+    pikeContainer.setData("data", standardData);
+    pikeContainer.setData("offset_x", offsetX);
+    pikeContainer.setData("offset_y", offsetY);
+    pikeContainer.add(sprite);
     pikeContainer.add(circularHitbox);
 
     return pikeContainer;

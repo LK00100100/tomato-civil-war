@@ -37,6 +37,7 @@ export class Preloader extends Scene {
     this.load.image("item-gun-smoothbore", "gun-smoothbore.png");
     this.load.image("item-gun-rifle", "gun-rifle.png");
     this.load.image("item-melee-pike", "pike.png");
+    this.load.image("item-melee-standard-america", "standard-america.png");
 
     /**
      * entities

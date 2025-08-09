@@ -13,15 +13,6 @@ export abstract class Melee extends Item {
    * This function is called when the kill mode is first turned off.
    */
   protected killModeIsOffCallback: () => void;
-  
-  //TODO: move to item
-  /**
-   * When you use the item, when is the next time you can use it again.
-   */
-  protected isOnCooldown: boolean;
-
-  //TODO: move to item
-  protected cooldownDuration: number;
 
   /**
    * While on, this melee weapon does damage.
@@ -32,20 +23,6 @@ export abstract class Melee extends Item {
   public setKillModeIsOffCallback(callback: () => void) {
     this.killModeIsOffCallback = callback;
   }
-
-  //TODO: may have to stop the item from moving if you die.
-
-  //TODO: pick up item, resets offset
-  /**
-   * The drawing offset x relative to the container.
-   * 0 angle is facing right.
-   */
-  protected offsetX;
-  /**
-   * The drawing offset y relative to the container
-   * 0 angle is facing right.
-   */
-  protected offsetY;
 
   constructor() {
     super();
