@@ -876,7 +876,7 @@ export abstract class Organization {
     //TODO: make less basic.
 
     //when this percentage of the force is remaining
-    const casualtyPercent = 15 - this.moraleBonus;  //can be negative
+    const casualtyPercent = 25 - this.moraleBonus;  //can be negative
 
     //ex: 10% of original forces <= casualty percentage of 10%, then flee
     if (this.units.size / this.originalUnitCount * 100 <= casualtyPercent) {

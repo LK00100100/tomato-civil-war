@@ -14,6 +14,7 @@ export class Stats {
     return Stats.instance;
   }
 
+  //TODO: use enums
   public static incrementStat(key: string, incrNumber = 1) {
     const oldNumber = Stats.instance.statsMap.get(key) || 0;
 

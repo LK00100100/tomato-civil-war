@@ -63,13 +63,13 @@ export class WeaponFactory {
     const standardData = new Standard(standardType);
 
     //TODO: move these original offsets into the tomato class. this is really a standard tomato offset. also may ellipse
-    const offsetX = 200;
-    const offsetY = 100;
+    const offsetX = 150;
+    const offsetY = 50;
 
     const sprite = game.add.sprite(0, 0, standardData.getItemName());
     sprite.setData("data", standardData);
 
-    const circle = game.add.ellipse(300, 0, 50, 50, 0x00ff00, 0);
+    const circle = game.add.ellipse(300, 60, 50, 50, 0x00ff00, 0);
     const circularHitbox = game.physics.add.existing(circle);
     circularHitbox.setData("data", standardData);
 

@@ -49,6 +49,8 @@ export class UnitFactory {
     // tomatoSprite.setMass(1);
     // tomatoSprite.setPushable(true);
 
+    //TODO: double check containers are destroyed
+
     return tomatoContainer;
   }
 }

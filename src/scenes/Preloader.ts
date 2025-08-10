@@ -46,6 +46,12 @@ export class Preloader extends Scene {
     this.load.image("entity-smoke", "smoke.png");
 
     /**
+     * vehicles
+     */
+    this.load.image("vehicle-horse", "horse.png");
+    this.load.image("vehicle-horse-dead", "horse-dead.png");
+
+    /**
      * audio
      */
     this.load.audio("audio-bugle-complete", "audio/bugle_complete.mp3");

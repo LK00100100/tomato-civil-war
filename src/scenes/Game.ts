@@ -21,6 +21,8 @@ import { MeleeAttackEvent } from "../item_event/MeleeAttackEvent";
 import { BulletPool } from "../pool/BulletPool";
 import { SmokePool } from "../pool/SmokePool";
 import { BulletTrailPool } from "../pool/BulletTrailPool";
+import { VehicleFactory } from "../vehicle/VehicleFactory";
+import { Vehicle } from "../vehicle/vehicle";
 
 export class Game extends Scene {
   camera: Phaser.Cameras.Scene2D.Camera;
@@ -36,6 +38,9 @@ export class Game extends Scene {
   //TODO: test with regular group with regular sprites
   public friendlyBullets: Phaser.Physics.Arcade.Group;
   public enemyBullets: Phaser.Physics.Arcade.Group;
+
+  public friendlyHorses: Phaser.Physics.Arcade.Group;
+  public enemyHorses: Phaser.Physics.Arcade.Group;
 
   /**
    * Melee weapons that are actively dangerous. For collision checking.
@@ -181,6 +186,9 @@ export class Game extends Scene {
     this.attackingMeleesHitboxes = this.physics.add.group();
     this.attackingMeleeContainers = new Set();
 
+    this.friendlyHorses = this.physics.add.group();
+    this.enemyHorses = this.physics.add.group();
+
     this.smokeEntities = new Set();
     this.bulletTrailEntities = new Map();
 
@@ -240,6 +248,25 @@ export class Game extends Scene {
         this.audioGunClick.play();
       });
     }
+
+    const horse = VehicleFactory.makeHorseSpriteWithData(this);
+    horse.setX(1100);
+    horse.setY(12000);
+    horse.setAngle(90);
+
+    const horseHitBox = horse.getData("hitbox");
+    this.friendlyHorses.add(horseHitBox);
+
+    const horse2 = VehicleFactory.makeHorseSpriteWithData(this);
+    horse2.setX(2200);
+    horse2.setY(12000);
+
+    const horseHitBox2 = horse2.getData("hitbox");
+    this.enemyHorses.add(horseHitBox2);
+
+    /**
+     * Draw enemies
+     */
 
     //TODO: organization shouldn't have the player. should be generic for all blobs of people.
     //TODO: make a playerOrganization
@@ -325,11 +352,10 @@ export class Game extends Scene {
       let standardContainer = WeaponFactory.makeStandardSpriteWithData(this, "america");
 
       for (let i = 0; i < numUnits; i++) {
-        
         let tomato;
         //add the standard
-        if(i == numUnits - 1) {
-          tomato = UnitFactory.createTomato(this, standardContainer);  
+        if (i == numUnits - 1) {
+          tomato = UnitFactory.createTomato(this, standardContainer);
         }
         else {
           tomato = UnitFactory.createTomato(this);
@@ -573,7 +599,7 @@ export class Game extends Scene {
     bulletTrail.y1 = bulletSprite.y;
     bulletTrail.x2 = bulletSprite.x;
     bulletTrail.y2 = bulletSprite.y;
-    
+
     this.graphics.strokeLineShape(bulletTrail);
     Phaser.Geom.Line.Rotate(bulletTrail, bulletSprite.rotation);
     this.bulletTrailEntities.set(bulletTrail, new BulletTrail(bulletSprite));
@@ -729,6 +755,41 @@ export class Game extends Scene {
       this
     );
 
+    //check melee hits any vehicles
+    this.physics.world.overlap(
+      this.friendlyHorses,
+      this.attackingMeleesHitboxes,
+      this.collideVehicleWithMelee.bind(this),
+      undefined,
+      this
+    );
+
+    this.physics.world.overlap(
+      this.enemyHorses,
+      this.attackingMeleesHitboxes,
+      this.collideVehicleWithMelee.bind(this),
+      undefined,
+      this
+    );
+
+    //TODO: make one func perhaps
+    this.physics.world.overlap(
+      this.friendlyHorses,
+      this.enemyBullets,
+      this.collideFriendlyVehicleWithEnemyBullets.bind(this),
+      undefined,
+      this
+    );
+
+    this.physics.world.overlap(
+      this.enemyHorses,
+      this.friendlyBullets,
+      this.collideEnemyVehicleWithFriendlyBullets.bind(this),
+      undefined,
+      this
+    );
+
+
     //note: only works if velocity is set.
     //containers cannot have velocity because they are not bodies
     //TODO: check later
@@ -769,7 +830,7 @@ export class Game extends Scene {
         unitContainer.x,
         unitContainer.y,
         "unit-tomato-dead"
-      );
+      ).setDepth(-10);  //corpses should be below many things //TODO: enum
 
       deadBodySprite.setAngle(unitContainer.angle);
       deadBodySprite.setDepth(-1);
@@ -786,6 +847,7 @@ export class Game extends Scene {
     //TODO: add dead bodies
   }
 
+  //TODO: maybe it should be one function. friendly bullets get eaten and nothing happens
   private collideEnemyWithFriendlyBullets(
     enemySprite:
       | Phaser.Types.Physics.Arcade.GameObjectWithBody
@@ -889,6 +951,154 @@ export class Game extends Scene {
     }
 
     //TODO: destroy container, but not guns
+  }
+
+  private collideVehicleWithMelee(
+    vehicleHitbox:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile,
+    meleeSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile
+  ) {
+    const meleeData: Melee = (
+      meleeSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
+    const physicsSprite =
+      vehicleHitbox as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const vehicle: Vehicle = physicsSprite.getData("data");
+
+    //TODO: player stats and more stats
+
+    vehicle.decrementHp(meleeData.calcDamage());
+
+    if (vehicle.isDead()) {
+      //make dead horse
+      const vehicleContainer: Phaser.GameObjects.Container = physicsSprite.getData("container");
+
+      const deadBodySprite = this.add.sprite(
+        vehicleContainer.x,
+        vehicleContainer.y,
+        "vehicle-horse-dead"
+      );
+      //TODO: enums for unit-tomato-dead etc
+
+      deadBodySprite.setAngle(vehicleContainer.angle);
+      deadBodySprite.setDepth(-10);
+
+      vehicleContainer.getData("destroyFunction")();
+    }
+
+    //TODO: destroy container, but not guns
+  }
+
+  //TODO: maybe it should be one function. friendly bullets get eaten and nothing happens
+  private collideFriendlyVehicleWithEnemyBullets(
+    hitboxSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile,
+    bulletSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile
+  ): void {
+    const bulletData: Bullet = (
+      bulletSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
+    const physicsSprite =
+      hitboxSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const vehicle: Vehicle = physicsSprite.getData("data");
+
+    const bullet: Bullet = (bulletSprite as Phaser.GameObjects.Sprite).getData(
+      "data"
+    );
+
+    if (bullet.getIsPlayerOwned()) {
+      (this.audioHitmarker as Phaser.Sound.HTML5AudioSound).setVolume(
+        Settings.getCurrentVolume()
+      );
+      this.audioHitmarker.play();
+
+      Stats.incrementStat("player-hits-enemy");
+    }
+
+    vehicle.decrementHp(bulletData.getDamage());
+
+    if (vehicle.isDead()) {
+      //make dead horse
+      const vehicleContainer: Phaser.GameObjects.Container = physicsSprite.getData("container");
+
+      const deadBodySprite = this.add.sprite(
+        vehicleContainer.x,
+        vehicleContainer.y,
+        "vehicle-horse-dead"
+      );
+      //TODO: enums for unit-tomato-dead etc
+
+      deadBodySprite.setAngle(vehicleContainer.angle);
+      deadBodySprite.setDepth(-10);
+
+      vehicleContainer.getData("destroyFunction")();
+
+      Stats.incrementStat("enemy-vehicle-dead");
+
+      if (bullet.getIsPlayerOwned()) {
+        Stats.incrementStat("player-kills-enemy-vehicle");
+      }
+    }
+
+    this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
+    bulletSprite.destroy();
+
+    Stats.incrementStat("friendly-hits-enemy-vehicle");
+    //TODO: destroy container, but not guns
+    //TODO: add dead bodies
+  }
+
+  private collideEnemyVehicleWithFriendlyBullets(
+    hitboxSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile,
+    bulletSprite:
+      | Phaser.Types.Physics.Arcade.GameObjectWithBody
+      | Phaser.Tilemaps.Tile
+  ): void {
+    const bulletData: Bullet = (
+      bulletSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody
+    ).getData("data");
+
+    const physicsSprite =
+      hitboxSprite as Phaser.Types.Physics.Arcade.GameObjectWithDynamicBody;
+    const vehicle: Vehicle = physicsSprite.getData("data");
+
+    vehicle.decrementHp(bulletData.getDamage());
+
+    if (vehicle.isDead()) {
+      //make dead horse
+      const vehicleContainer: Phaser.GameObjects.Container = physicsSprite.getData("container");
+
+      const deadBodySprite = this.add.sprite(
+        vehicleContainer.x,
+        vehicleContainer.y,
+        "vehicle-horse-dead"
+      );
+      //TODO: enums for unit-tomato-dead etc
+
+      deadBodySprite.setAngle(vehicleContainer.angle);
+      deadBodySprite.setDepth(-10);
+
+      vehicleContainer.getData("destroyFunction")();
+
+      Stats.incrementStat("enemy-vehicle-dead");
+    }
+
+    this.friendlyBullets.remove(bulletSprite as Phaser.GameObjects.GameObject);
+    bulletSprite.destroy();
+
+    Stats.incrementStat("enemy-hits-friendly-vehicle");
+    //TODO: destroy container, but not guns
+    //TODO: add dead bodies
   }
 
   public getFriendlyArmy() {

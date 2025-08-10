@@ -11,6 +11,7 @@ export class Army {
 
   private armies: Array<Organization>;
 
+  //TODO: i could move this out...
   private unitHitSprites: Phaser.Physics.Arcade.Group;
 
   constructor(game: Game, teamNumber: number) {
