@@ -349,12 +349,11 @@ export class Game extends Scene {
       const name = "A-company-" + c;
       const company = new Company(this, name);
 
-      let standardContainer = WeaponFactory.makeStandardSpriteWithData(this, "america");
-
       for (let i = 0; i < numUnits; i++) {
         let tomato;
         //add the standard
-        if (i == numUnits - 1) {
+        if (i == numUnits - 5) {
+          let standardContainer = WeaponFactory.makeStandardSpriteWithData(this, "america");
           tomato = UnitFactory.createTomato(this, standardContainer);
         }
         else {
@@ -617,8 +616,8 @@ export class Game extends Scene {
    */
   public beginMelee(
     unit: Unit,
-    _: number,
-    __: MeleeAttackEvent
+    _?: number,
+    __?: MeleeAttackEvent
   ): void {
     const container = unit.getUnitContainer();
     const weaponContainer: Phaser.GameObjects.Container = container.getByName("weapon");

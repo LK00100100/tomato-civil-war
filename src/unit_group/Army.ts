@@ -4,6 +4,7 @@ import { Organization } from "./Organization";
 
 /**
  * Contains smaller units of organization.
+ * Can override organizational orders.
  * Draws and calculates.
  */
 export class Army {

@@ -10,7 +10,8 @@ import { Utils } from "../util/Utils";
 
 /**
  * Military Organization unit.
- * Draws, calculates, and orders Units under the Organization.
+ * Draws, calculates, and orders Units under the Organization. 
+ * Armies have several organizations.
  */
 export abstract class Organization {
   //TODO: make an organization that is just you and remove "is player unit" check
@@ -1069,7 +1070,13 @@ export abstract class Organization {
         return;
       }
 
+      //TODO: move all this event handler to this.game.
+
       const event = unit.doAction();
+
+      if(event.name.startsWith("item-melee-standard")){
+        // disable this.game.beginMelee(unit);
+      }
 
       if (event.name.startsWith("item-gun") && event.name.endsWith("fire")) {
         this.game.shootBullet(unit, this.teamNumber, event as GunFireEvent);
